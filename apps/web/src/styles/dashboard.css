@@ -151,7 +151,7 @@ nav a[aria-current="page"] {
   white-space: nowrap;
 }
 
-.key-actions {
+.row-actions {
   align-items: end;
   display: grid;
   gap: 8px;
@@ -191,7 +191,7 @@ nav a[aria-current="page"] {
     grid-template-columns: 1fr;
   }
 
-  .key-actions {
+  .row-actions {
     align-items: start;
     justify-items: start;
   }

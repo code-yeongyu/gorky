@@ -4,6 +4,7 @@ import {
   type AccountRow,
   type ApiKeyRow,
   type CreateKeyResponse,
+  disableAccount,
   fetchAccounts,
   fetchKeys,
   fetchModels,
@@ -112,6 +113,19 @@ function App(): React.ReactElement {
     }
   }
 
+  async function disableRegisteredAccount(accountId: string): Promise<void> {
+    try {
+      setIsLoading(true)
+      await disableAccount(adminToken, accountId)
+      await refreshDashboard()
+      setNotice({ kind: "success", message: "Account disabled." })
+    } catch (error) {
+      setNotice({ kind: "error", message: messageFromError(error) })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   async function revokeApiKey(keyId: string): Promise<void> {
     try {
       setIsLoading(true)
@@ -214,7 +228,11 @@ function App(): React.ReactElement {
                 Refresh
               </button>
             </div>
-            <AccountList accounts={accounts} />
+            <AccountList
+              accounts={accounts}
+              isBusy={isLoading}
+              onDisable={disableRegisteredAccount}
+            />
           </section>
 
           <section className="panel" id="register" aria-label="Register accounts">

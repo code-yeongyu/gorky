@@ -44,6 +44,17 @@ export async function fetchAccounts(adminToken: string): Promise<readonly Accoun
   return body.accounts
 }
 
+export async function disableAccount(adminToken: string, accountId: string): Promise<AccountRow> {
+  const body = await requestJson<{ readonly account: AccountRow }>(
+    `/api/admin/accounts/${encodeURIComponent(accountId)}/disable`,
+    {
+      method: "POST",
+      adminToken,
+    },
+  )
+  return body.account
+}
+
 export async function fetchKeys(adminToken: string): Promise<readonly ApiKeyRow[]> {
   const body = await requestJson<{ readonly keys: readonly ApiKeyRow[] }>("/api/admin/keys", {
     method: "GET",

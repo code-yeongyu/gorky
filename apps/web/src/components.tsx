@@ -3,6 +3,8 @@ import type { AccountRow, ApiKeyRow } from "./api"
 
 export function AccountList(props: {
   readonly accounts: readonly AccountRow[]
+  readonly isBusy: boolean
+  readonly onDisable: (accountId: string) => void
 }): React.ReactElement {
   if (!props.accounts.length) {
     return <p className="empty-state">No accounts loaded yet.</p>
@@ -19,9 +21,19 @@ export function AccountList(props: {
             <p>Expires {formatDate(account.expiresAt)}</p>
           </div>
           <ModelChips models={account.modelIds} label={`${account.email} models`} />
-          <span className="last-used">
-            {account.lastUsedAt ? formatDate(account.lastUsedAt) : "idle"}
-          </span>
+          <div className="row-actions">
+            <span className="last-used">
+              {account.lastUsedAt ? formatDate(account.lastUsedAt) : "idle"}
+            </span>
+            <button
+              type="button"
+              className="button-danger"
+              disabled={props.isBusy || account.status !== "active"}
+              onClick={() => props.onDisable(account.id)}
+            >
+              Disable
+            </button>
+          </div>
         </article>
       ))}
     </div>
@@ -50,7 +62,7 @@ export function KeyList(props: {
             </p>
           </div>
           <ModelChips models={apiKey.allowedModels} label={`${apiKey.name} allowed models`} />
-          <div className="key-actions">
+          <div className="row-actions">
             <span className="last-used">
               {apiKey.lastUsedAt ? formatDate(apiKey.lastUsedAt) : "unused"}
             </span>
