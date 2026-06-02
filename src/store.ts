@@ -7,4 +7,5 @@ export type GorkyStore = {
   readonly saveApiKey: (record: ApiKeyRecord) => Promise<void>
   readonly findApiKeyByHash: (keyHash: string) => Promise<ApiKeyRecord | null>
   readonly touchAccount: (accountId: string, usedAt: number) => Promise<void>
+  readonly touchApiKey: (keyHash: string, usedAt: number) => Promise<void>
 }

@@ -113,6 +113,12 @@ export function createD1Store(db: D1Database, tokenSecret: string): GorkyStore {
         .bind(usedAt, accountId)
         .run()
     },
+    touchApiKey: async (keyHash, usedAt) => {
+      await db
+        .prepare("UPDATE api_keys SET last_used_at = ? WHERE key_hash = ?")
+        .bind(usedAt, keyHash)
+        .run()
+    },
   }
 }
 

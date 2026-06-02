@@ -44,5 +44,13 @@ export function createMemoryStore(input: MemoryStoreInput): MemoryStore {
       }
       accounts.splice(index, 1, { ...account, lastUsedAt: usedAt })
     },
+    touchApiKey: async (keyHash, usedAt) => {
+      const index = apiKeys.findIndex((candidate) => candidate.keyHash === keyHash)
+      const apiKey = apiKeys[index]
+      if (!apiKey) {
+        return
+      }
+      apiKeys.splice(index, 1, { ...apiKey, lastUsedAt: usedAt })
+    },
   }
 }

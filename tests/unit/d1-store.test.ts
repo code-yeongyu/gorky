@@ -94,6 +94,13 @@ class FakeD1Statement {
       })
     }
 
+    if (this.sql.includes("UPDATE api_keys")) {
+      const apiKey = this.db.apiKeys.get(String(this.bindings[1]))
+      if (apiKey) {
+        apiKey.last_used_at = this.bindings[0]
+      }
+    }
+
     return { success: true, meta: {}, results: [] }
   }
 
@@ -155,5 +162,30 @@ describe("D1 store", () => {
 
     // Then
     expect(found).toEqual(record)
+  })
+
+  it("Given an api key record When touching usage Then last used timestamp round-trips", async () => {
+    // Given
+    const db = new FakeD1Database()
+    const store = createD1Store(db as unknown as D1Database, "0123456789abcdef0123456789abcdef")
+    const record: ApiKeyRecord = {
+      id: "key_1",
+      keyHash: "hash_1",
+      keyPrefix: "gorky_123456",
+      name: "qa",
+      allowedModels: ["grok-build"],
+      createdAt: 1_780_000_000_000,
+      lastUsedAt: null,
+      revokedAt: null,
+      deactivatedAt: null,
+    }
+
+    // When
+    await store.saveApiKey(record)
+    await store.touchApiKey(record.keyHash, 1_780_000_123_000)
+    const found = await store.findApiKeyByHash(record.keyHash)
+
+    // Then
+    expect(found?.lastUsedAt).toBe(1_780_000_123_000)
   })
 })

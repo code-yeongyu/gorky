@@ -40,7 +40,9 @@ export function registerProxyRoutes(
       body: JSON.stringify(parsed.data),
     })
     const upstreamResponse = await deps.upstream(upstreamRequest)
-    await deps.store.touchAccount(prepared.account.id, deps.now())
+    const usedAt = deps.now()
+    await deps.store.touchAccount(prepared.account.id, usedAt)
+    await deps.store.touchApiKey(prepared.keyHash, usedAt)
     deps.logger?.({
       event: "chat_completion",
       requestId: getRequestId(c.req.raw.headers),
@@ -76,7 +78,9 @@ export function registerProxyRoutes(
       body: JSON.stringify(parsed.data),
     })
     const upstreamResponse = await deps.upstream(upstreamRequest)
-    await deps.store.touchAccount(prepared.account.id, deps.now())
+    const usedAt = deps.now()
+    await deps.store.touchAccount(prepared.account.id, usedAt)
+    await deps.store.touchApiKey(prepared.keyHash, usedAt)
     deps.logger?.({
       event: "responses",
       requestId: getRequestId(c.req.raw.headers),
@@ -119,6 +123,7 @@ async function prepareAccount(deps: AppDependencies, headers: Headers, model: st
   return {
     kind: "success",
     account: fresh.account,
+    keyHash: auth.record.keyHash,
     keyPrefix: auth.record.keyPrefix,
   } as const
 }
