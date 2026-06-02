@@ -100,12 +100,14 @@ nav a[aria-current="page"] {
   grid-row: span 2;
 }
 
-.account-list {
+.account-list,
+.key-list {
   display: grid;
   gap: 12px;
 }
 
-.account-row {
+.account-row,
+.key-row {
   align-items: center;
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
@@ -129,6 +131,11 @@ nav a[aria-current="page"] {
 
 .status[data-state="active"] {
   color: var(--accent-primary);
+}
+
+.status[data-state="revoked"],
+.status[data-state="disabled"] {
+  color: var(--status-error);
 }
 
 .models {
@@ -172,6 +179,7 @@ nav a[aria-current="page"] {
 
   .metrics,
   .account-row,
+  .key-row,
   .dashboard-grid {
     grid-template-columns: 1fr;
   }

@@ -15,6 +15,17 @@ export type CreateKeyResponse = {
   readonly allowedModels: readonly string[]
 }
 
+export type ApiKeyRow = {
+  readonly id: string
+  readonly keyPrefix: string
+  readonly name: string
+  readonly allowedModels: readonly string[]
+  readonly createdAt: number
+  readonly lastUsedAt: number | null
+  readonly revokedAt: number | null
+  readonly deactivatedAt: number | null
+}
+
 export async function fetchModels(): Promise<readonly string[]> {
   const body = await requestJson<{ readonly models: readonly string[] }>("/api/models", {
     method: "GET",
@@ -31,6 +42,14 @@ export async function fetchAccounts(adminToken: string): Promise<readonly Accoun
     },
   )
   return body.accounts
+}
+
+export async function fetchKeys(adminToken: string): Promise<readonly ApiKeyRow[]> {
+  const body = await requestJson<{ readonly keys: readonly ApiKeyRow[] }>("/api/admin/keys", {
+    method: "GET",
+    adminToken,
+  })
+  return body.keys
 }
 
 export async function requestJson<T = unknown>(

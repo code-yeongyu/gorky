@@ -2,12 +2,14 @@ import { type FormEvent, StrictMode, useEffect, useMemo, useState } from "react"
 import { createRoot } from "react-dom/client"
 import {
   type AccountRow,
+  type ApiKeyRow,
   type CreateKeyResponse,
   fetchAccounts,
+  fetchKeys,
   fetchModels,
   requestJson,
 } from "./api"
-import { AccountList, KeyForm, ManualAccountForm, OAuthForm } from "./components"
+import { AccountList, KeyForm, KeyList, ManualAccountForm, OAuthForm } from "./components"
 import "./styles.css"
 
 type Notice = { readonly kind: "success" | "error" | "info"; readonly message: string }
@@ -20,6 +22,7 @@ function App(): React.ReactElement {
   )
   const [models, setModels] = useState<readonly string[]>([])
   const [accounts, setAccounts] = useState<readonly AccountRow[]>([])
+  const [apiKeys, setApiKeys] = useState<readonly ApiKeyRow[]>([])
   const [notice, setNotice] = useState<Notice>({
     kind: "info",
     message: "Connect with an admin token.",
@@ -27,6 +30,7 @@ function App(): React.ReactElement {
   const [generatedKey, setGeneratedKey] = useState<CreateKeyResponse | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const activeAccounts = accounts.filter((account) => account.status === "active").length
+  const activeKeys = apiKeys.filter((apiKey) => !apiKey.revokedAt && !apiKey.deactivatedAt).length
 
   useEffect(() => {
     fetchModels()
@@ -37,14 +41,15 @@ function App(): React.ReactElement {
   const defaultModel = models[0] ?? "grok-build"
   const modelOptions = useMemo(() => (models.length ? models : ["grok-build"]), [models])
 
-  async function refreshAccounts(token = adminToken): Promise<void> {
+  async function refreshDashboard(token = adminToken): Promise<void> {
     if (!token) {
       return
     }
     setIsLoading(true)
     try {
-      const nextAccounts = await fetchAccounts(token)
+      const [nextAccounts, nextKeys] = await Promise.all([fetchAccounts(token), fetchKeys(token)])
       setAccounts(nextAccounts)
+      setApiKeys(nextKeys)
       setNotice({ kind: "success", message: "Dashboard is synced." })
     } catch (error) {
       setNotice({ kind: "error", message: messageFromError(error) })
@@ -56,7 +61,7 @@ function App(): React.ReactElement {
   async function saveAdminToken(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
     sessionStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, adminToken)
-    await refreshAccounts(adminToken)
+    await refreshDashboard(adminToken)
   }
 
   async function startOAuth(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -96,6 +101,7 @@ function App(): React.ReactElement {
         },
       })
       setGeneratedKey(response)
+      await refreshDashboard()
       setNotice({
         kind: "success",
         message: "API key created. Copy it now; it will not be shown again.",
@@ -122,7 +128,7 @@ function App(): React.ReactElement {
         },
       })
       formElement.reset()
-      await refreshAccounts()
+      await refreshDashboard()
       setNotice({ kind: "success", message: "Account registered. Token fields were cleared." })
     } catch (error) {
       setNotice({ kind: "error", message: messageFromError(error) })
@@ -177,8 +183,8 @@ function App(): React.ReactElement {
             <strong>{modelOptions.length}</strong>
           </article>
           <article>
-            <span>Refresh window</span>
-            <strong>5m</strong>
+            <span>Custom keys</span>
+            <strong>{activeKeys}</strong>
           </article>
         </section>
 
@@ -188,7 +194,7 @@ function App(): React.ReactElement {
               <h2>Registered accounts</h2>
               <button
                 type="button"
-                onClick={() => refreshAccounts()}
+                onClick={() => refreshDashboard()}
                 disabled={!adminToken || isLoading}
               >
                 Refresh
@@ -208,9 +214,10 @@ function App(): React.ReactElement {
 
           <section className="panel" id="keys" aria-label="API keys">
             <div className="panel-title">
-              <h2>Custom API key</h2>
+              <h2>Custom API keys</h2>
               <p>Keys are hash-stored and returned once.</p>
             </div>
+            <KeyList apiKeys={apiKeys} />
             <KeyForm models={modelOptions} onSubmit={createKey} />
             {generatedKey ? (
               <output className="key-output" aria-label="Generated API key">

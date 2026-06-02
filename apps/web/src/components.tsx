@@ -1,5 +1,5 @@
 import type { FormEvent } from "react"
-import type { AccountRow } from "./api"
+import type { AccountRow, ApiKeyRow } from "./api"
 
 export function AccountList(props: {
   readonly accounts: readonly AccountRow[]
@@ -21,6 +21,33 @@ export function AccountList(props: {
           <ModelChips models={account.modelIds} label={`${account.email} models`} />
           <span className="last-used">
             {account.lastUsedAt ? formatDate(account.lastUsedAt) : "idle"}
+          </span>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+export function KeyList(props: { readonly apiKeys: readonly ApiKeyRow[] }): React.ReactElement {
+  if (!props.apiKeys.length) {
+    return <p className="empty-state">No keys loaded yet.</p>
+  }
+  return (
+    <div className="key-list">
+      {props.apiKeys.map((apiKey) => (
+        <article className="key-row" key={apiKey.id}>
+          <div>
+            <span className="status" data-state={keyStatus(apiKey)}>
+              {keyStatus(apiKey)}
+            </span>
+            <h3>{apiKey.name}</h3>
+            <p>
+              <code>{apiKey.keyPrefix}</code>
+            </p>
+          </div>
+          <ModelChips models={apiKey.allowedModels} label={`${apiKey.name} allowed models`} />
+          <span className="last-used">
+            {apiKey.lastUsedAt ? formatDate(apiKey.lastUsedAt) : "unused"}
           </span>
         </article>
       ))}
@@ -130,4 +157,14 @@ function formatDate(value: number): string {
   return new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(
     new Date(value),
   )
+}
+
+function keyStatus(apiKey: ApiKeyRow): "active" | "revoked" | "disabled" {
+  if (apiKey.revokedAt) {
+    return "revoked"
+  }
+  if (apiKey.deactivatedAt) {
+    return "disabled"
+  }
+  return "active"
 }
