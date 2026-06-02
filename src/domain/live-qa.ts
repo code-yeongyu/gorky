@@ -47,3 +47,14 @@ export function assertMatchingModelCatalog(
     throw new Error(`Live model catalogs diverged: api=${apiModelIds} v1=${v1ModelIds}`)
   }
 }
+
+export function assertModelCatalogContains(
+  expectedModelIds: readonly string[],
+  actualModelIds: readonly string[],
+  actualLabel: string,
+): void {
+  const missing = expectedModelIds.filter((modelId) => !actualModelIds.includes(modelId))
+  if (missing.length) {
+    throw new Error(`${actualLabel} is missing Grok CLI model(s): ${missing.join(", ")}`)
+  }
+}

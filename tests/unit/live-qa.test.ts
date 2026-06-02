@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   ApiModelsResponseSchema,
   assertMatchingModelCatalog,
+  assertModelCatalogContains,
   ManifestResponseSchema,
   V1ModelsResponseSchema,
 } from "../../src/domain/live-qa"
@@ -38,6 +39,16 @@ describe("live QA contracts", () => {
     expect(() => assertMatchingModelCatalog(apiModels, v1Models)).toThrow(
       "Live model catalogs diverged",
     )
+  })
+
+  it("Given Grok CLI models When live catalog omits one Then the QA check fails", () => {
+    expect(() =>
+      assertModelCatalogContains(
+        ["grok-composer-2.5-fast", "grok-build", "grok-reasoning"],
+        ["grok-composer-2.5-fast", "grok-build"],
+        "live /api/models",
+      ),
+    ).toThrow("live /api/models is missing Grok CLI model(s): grok-reasoning")
   })
 
   it("Given a manifest response When parsing Then standalone PWA metadata is required", () => {

@@ -103,12 +103,17 @@ pnpm typecheck
 pnpm build
 pnpm exec wrangler deploy --dry-run
 pnpm qa:live
+GORKY_GROK_BIN=/Users/yeongyu/.grok/bin/grok pnpm qa:grok-models
 ```
 
 `pnpm qa:live` checks the deployed Worker health, model catalogs, admin
 protection, PWA manifest, and desktop/mobile dashboard rendering. Screenshots
 are written to `.qa/`, which is ignored so token-bearing manual evidence does
 not enter public commits.
+
+`pnpm qa:grok-models` requires an authenticated local Grok CLI. It compares
+`grok models` with `wrangler.toml` and the deployed `/api/models` catalog so
+every CLI-available model is exposed by Gorky before release.
 
 ## Security Notes
 
