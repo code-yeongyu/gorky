@@ -35,15 +35,21 @@ export async function ensureFreshAccountToken(
       await input.store.saveRefreshedAccount(nextAccount)
       return { kind: "success", account: nextAccount }
     }
-    case "failure":
+    case "failure": {
+      const failedAccount: AccountTokenRecord = {
+        ...input.account,
+        status: "refresh_failed",
+      }
+      await input.store.saveRefreshedAccount(failedAccount)
       return {
         kind: "failure",
-        account: input.account,
+        account: failedAccount,
         error: {
           type: "grok_refresh_error",
           code: refresh.errorCode,
           message: refresh.message,
         },
       }
+    }
   }
 }

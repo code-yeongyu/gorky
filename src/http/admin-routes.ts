@@ -110,7 +110,7 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
       accounts: accounts.map((account) => ({
         id: account.id,
         email: account.email,
-        principalType: account.status,
+        principalType: "User",
         expiresAt: account.expiresAt,
         modelIds: account.modelIds,
         status: account.status,

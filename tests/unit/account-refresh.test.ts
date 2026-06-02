@@ -46,7 +46,7 @@ describe("ensureFreshAccountToken", () => {
     expect(writes[0]?.refreshToken).toBe("new-refresh")
   })
 
-  it("Given refresh returns invalid_grant When ensureFreshAccountToken runs Then it returns api error and preserves refresh token", async () => {
+  it("Given refresh returns invalid_grant When ensureFreshAccountToken runs Then it returns api error and marks account failed", async () => {
     // Given
     const account: AccountTokenRecord = {
       id: "acct_1",
@@ -87,7 +87,12 @@ describe("ensureFreshAccountToken", () => {
     }
     expect(result.error.type).toBe("grok_refresh_error")
     expect(result.error.code).toBe("invalid_grant")
-    expect(writes).toHaveLength(0)
+    expect(writes).toHaveLength(1)
+    expect(writes[0]).toMatchObject({
+      accessToken: "old-access",
+      refreshToken: "old-refresh",
+      status: "refresh_failed",
+    })
     expect(account.refreshToken).toBe("old-refresh")
   })
 })

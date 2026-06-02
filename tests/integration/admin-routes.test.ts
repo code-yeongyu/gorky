@@ -139,6 +139,8 @@ describe("admin routes", () => {
     expect(response.status).toBe(200)
     expect(text).toContain("qa@example.com")
     expect(text).toContain("grok-build")
+    expect(text).toContain('"principalType":"User"')
+    expect(text).toContain('"status":"active"')
     expect(text).not.toContain("SENSITIVE_ACCESS_SENTINEL")
     expect(text).not.toContain("SENSITIVE_REFRESH_SENTINEL")
   })
