@@ -27,3 +27,8 @@ export const RegisterAccountRequestSchema = z.object({
   expiresAt: z.number().int().positive(),
   modelIds: z.array(z.string().min(1)).min(1),
 })
+
+export const OAuthStartRequestSchema = z.object({
+  redirectUri: z.url(),
+  modelIds: z.array(z.string().min(1)).min(1).optional(),
+})

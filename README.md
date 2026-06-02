@@ -21,8 +21,10 @@ The first supported upstreams are the Grok CLI chat proxy and the public xAI API
 
 ```http
 POST /api/admin/accounts
+POST /api/admin/oauth/start
 POST /api/admin/keys
 GET  /api/admin/accounts
+GET  /api/oauth/callback
 GET  /v1/models
 POST /v1/chat/completions
 POST /v1/responses
@@ -73,6 +75,10 @@ wrangler d1 migrations apply gorky-db --remote
 wrangler secret put ADMIN_TOKEN
 wrangler secret put TOKEN_ENCRYPTION_SECRET
 ```
+
+`LOGIN_STATE` is used for short-lived OAuth PKCE state during account
+registration. The callback stores only encrypted token material and returns a
+redacted account record.
 
 ## Verification
 

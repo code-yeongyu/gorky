@@ -1,11 +1,17 @@
 import { createApp } from "./app"
 import { createD1Store } from "./cloudflare/d1-store"
+import { createKvOAuthStateStore } from "./cloudflare/kv-oauth-state-store"
+import { createOAuthAuthorizationClient } from "./cloudflare/oauth-authorization-client"
 import { createOAuthRefreshClient } from "./cloudflare/oauth-refresh-client"
 import { parseGrokModelIds } from "./domain/models"
 
 export default {
   fetch: (request: Request, env: Env, executionContext: ExecutionContext): Promise<Response> => {
     const refreshClient = createOAuthRefreshClient({
+      issuer: env.AUTH_ISSUER,
+      clientId: env.OIDC_CLIENT_ID,
+    })
+    const authorizationClient = createOAuthAuthorizationClient({
       issuer: env.AUTH_ISSUER,
       clientId: env.OIDC_CLIENT_ID,
     })
@@ -19,6 +25,10 @@ export default {
       cliProxyBaseUrl: env.GROK_CLI_PROXY_BASE_URL,
       publicApiBaseUrl: env.GROK_PUBLIC_API_BASE_URL,
       models: parseGrokModelIds(env.GROK_MODEL_IDS),
+      oauthIssuer: env.AUTH_ISSUER,
+      oauthClientId: env.OIDC_CLIENT_ID,
+      oauthStateStore: createKvOAuthStateStore(env.LOGIN_STATE),
+      oauthAuthorizationClient: authorizationClient,
       logger: (event) => {
         executionContext.waitUntil(Promise.resolve(console.log(JSON.stringify(event))))
       },

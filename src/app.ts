@@ -4,6 +4,7 @@ import type { TokenRefreshResult } from "./domain/types"
 import { registerAdminRoutes } from "./http/admin-routes"
 import { extractApiKey, getRequestId } from "./http/auth"
 import type { LoggerEvent } from "./http/logging"
+import { registerOAuthRoutes } from "./http/oauth-routes"
 import { registerProxyRoutes } from "./http/proxy-routes"
 import { redactSensitiveData } from "./lib/redaction"
 import type { GorkyStore } from "./store"
@@ -23,6 +24,10 @@ export type AppDependencies = {
   readonly cliProxyBaseUrl?: string
   readonly publicApiBaseUrl?: string
   readonly models?: readonly string[]
+  readonly oauthIssuer?: string
+  readonly oauthClientId?: string
+  readonly oauthStateStore?: import("./domain/oauth").OAuthStateStore
+  readonly oauthAuthorizationClient?: import("./domain/oauth").OAuthAuthorizationClient
 }
 
 export function createApp(deps: AppDependencies): Hono {
@@ -70,6 +75,7 @@ export function createApp(deps: AppDependencies): Hono {
   })
 
   registerAdminRoutes(app, deps)
+  registerOAuthRoutes(app, deps)
   registerProxyRoutes(app, deps, { cliProxyBaseUrl, grokClientVersion, publicApiBaseUrl })
 
   return app
