@@ -14,10 +14,14 @@ describe("admin routes", () => {
   it("Given admin auth When registering an account Then token fields are not returned", async () => {
     // Given
     const store = createMemoryStore({ accounts: [], apiKeys: [] })
+    const logs: unknown[] = []
     const app = createApp({
       store,
       adminToken: "dev-admin-token",
       now: () => 1_780_000_000_000,
+      logger: (event) => {
+        logs.push(event)
+      },
       upstream: async () => Response.json({ ok: true }),
       refreshClient: async (): Promise<TokenRefreshResult> => ({
         kind: "success",
@@ -43,12 +47,18 @@ describe("admin routes", () => {
       }),
     })
     const text = await response.text()
+    const logText = JSON.stringify(logs)
 
     // Then
     expect(response.status).toBe(201)
     expect(text).toContain("qa@example.com")
     expect(text).not.toContain("SENSITIVE_ACCESS_SENTINEL")
     expect(text).not.toContain("SENSITIVE_REFRESH_SENTINEL")
+    expect(logText).toContain("admin_account_registered")
+    expect(logText).toContain("acct_")
+    expect(logText).not.toContain("qa@example.com")
+    expect(logText).not.toContain("SENSITIVE_ACCESS_SENTINEL")
+    expect(logText).not.toContain("SENSITIVE_REFRESH_SENTINEL")
     expect(store.accounts).toHaveLength(1)
     expect(store.accounts[0]?.refreshToken).toBe("SENSITIVE_REFRESH_SENTINEL")
   })

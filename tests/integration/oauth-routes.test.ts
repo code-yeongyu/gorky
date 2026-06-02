@@ -133,4 +133,60 @@ describe("OAuth account registration routes", () => {
     expect(store.accounts[0]?.refreshToken).toBe("SENSITIVE_REFRESH_SENTINEL")
     expect(await stateStore.get("state_1")).toBeNull()
   })
+
+  it("Given saved OAuth state When token exchange fails Then an API error and redacted log are emitted", async () => {
+    // Given
+    const stateStore = createMemoryOAuthStateStore()
+    await stateStore.put(
+      "state_2",
+      {
+        codeVerifier: "verifier_abcdefghijklmnopqrstuvwxyz123456",
+        redirectUri: "https://gorky.example.com/api/oauth/callback",
+        nonce: "nonce_abcdefghijklmnopqrstuvwxyz",
+        modelIds: ["grok-build"],
+        createdAt: 1_780_000_000_000,
+      },
+      600,
+    )
+    const logs: unknown[] = []
+    const app = createApp({
+      store: createMemoryStore({ accounts: [], apiKeys: [] }),
+      adminToken: "dev-admin-token",
+      now: () => 1_780_000_100_000,
+      logger: (event) => {
+        logs.push(event)
+      },
+      upstream: async () => Response.json({ ok: true }),
+      refreshClient: async (): Promise<TokenRefreshResult> => ({
+        kind: "success",
+        accessToken: "unused",
+        refreshToken: null,
+        expiresInSeconds: 21_600,
+      }),
+      oauthIssuer: "https://auth.x.ai",
+      oauthClientId: "client_1",
+      oauthStateStore: stateStore,
+      oauthAuthorizationClient: {
+        exchangeCode: async () => ({
+          kind: "failure",
+          errorCode: "invalid_grant",
+          message: "OAuth code rejected by xAI",
+        }),
+      },
+    })
+
+    // When
+    const response = await app.request("/api/oauth/callback?state=state_2&code=SENSITIVE_CODE")
+    const text = await response.text()
+    const logText = JSON.stringify(logs)
+
+    // Then
+    expect(response.status).toBe(502)
+    expect(text).toContain("grok_authorization_error")
+    expect(text).toContain("invalid_grant")
+    expect(logText).toContain("oauth_callback_failed")
+    expect(logText).toContain("invalid_grant")
+    expect(logText).not.toContain("SENSITIVE_CODE")
+    expect(logText).not.toContain("verifier_abcdefghijklmnopqrstuvwxyz123456")
+  })
 })
