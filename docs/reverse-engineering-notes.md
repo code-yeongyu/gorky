@@ -830,7 +830,7 @@ A `grok-oauth-api-proxy` service should probably do the following:
 6. Forward requests to one of:
    - `https://cli-chat-proxy.grok.com/v1`
    - `https://api.x.ai/v1`
-7. Add required proxy headers, especially `x-grok-client-version`.
+7. Add required proxy headers: `X-XAI-Token-Auth`, `x-grok-client-version`, and `x-grok-model-override`.
 8. Redact secrets from logs.
 9. Preserve streaming behavior if supporting `stream: true`.
 10. Preserve OpenAI-style tool-call fields exactly.

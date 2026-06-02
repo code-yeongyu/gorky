@@ -32,10 +32,12 @@ POST /v1/responses
 GET  /health
 ```
 
-CLI proxy calls include the required header:
+CLI proxy calls include the required Grok CLI session headers:
 
 ```http
+X-XAI-Token-Auth: xai-grok-cli
 x-grok-client-version: 0.2.16
+x-grok-model-override: <requested-model>
 ```
 
 ## Use With Grok CLI

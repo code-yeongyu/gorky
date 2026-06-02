@@ -64,7 +64,9 @@ describe("chat completions route", () => {
     expect(captures).toHaveLength(1)
     expect(captures[0]?.url).toBe("https://cli-chat-proxy.grok.com/v1/chat/completions")
     expect(captures[0]?.headers.get("Authorization")).toBe("Bearer redacted-access-token")
+    expect(captures[0]?.headers.get("X-XAI-Token-Auth")).toBe("xai-grok-cli")
     expect(captures[0]?.headers.get("x-grok-client-version")).toBe("0.2.16")
+    expect(captures[0]?.headers.get("x-grok-model-override")).toBe("grok-composer-2.5-fast")
     expect(captures[0]?.body).toContain("grok-composer-2.5-fast")
   })
 

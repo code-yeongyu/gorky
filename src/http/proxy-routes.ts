@@ -35,8 +35,10 @@ export function registerProxyRoutes(
       method: "POST",
       headers: {
         Authorization: `Bearer ${prepared.account.accessToken}`,
+        "X-XAI-Token-Auth": "xai-grok-cli",
         "content-type": "application/json",
         "x-grok-client-version": config.grokClientVersion,
+        "x-grok-model-override": parsed.data.model,
       },
       body: JSON.stringify(parsed.data),
     })
