@@ -112,6 +112,17 @@ export function createD1Store(db: D1Database, tokenSecret: string): GorkyStore {
       }
       return apiKeyFromRow(ApiKeyRowSchema.parse(row))
     },
+    revokeApiKey: async (keyId, revokedAt) => {
+      await db
+        .prepare("UPDATE api_keys SET revoked_at = COALESCE(revoked_at, ?) WHERE id = ?")
+        .bind(revokedAt, keyId)
+        .run()
+      const row = await db.prepare("SELECT * FROM api_keys WHERE id = ?").bind(keyId).first()
+      if (!row) {
+        return null
+      }
+      return apiKeyFromRow(ApiKeyRowSchema.parse(row))
+    },
     touchAccount: async (accountId, usedAt) => {
       await db
         .prepare("UPDATE accounts SET last_used_at = ? WHERE id = ?")

@@ -37,6 +37,16 @@ export function createMemoryStore(input: MemoryStoreInput): MemoryStore {
     findApiKeyByHash: async (keyHash) => {
       return apiKeys.find((record) => record.keyHash === keyHash) ?? null
     },
+    revokeApiKey: async (keyId, revokedAt) => {
+      const index = apiKeys.findIndex((candidate) => candidate.id === keyId)
+      const apiKey = apiKeys[index]
+      if (!apiKey) {
+        return null
+      }
+      const revoked = { ...apiKey, revokedAt: apiKey.revokedAt ?? revokedAt }
+      apiKeys.splice(index, 1, revoked)
+      return revoked
+    },
     touchAccount: async (accountId, usedAt) => {
       const index = accounts.findIndex((candidate) => candidate.id === accountId)
       const account = accounts[index]

@@ -14,6 +14,7 @@ The first supported upstreams are the Grok CLI chat proxy and the public xAI API
 - OpenAI-style `/v1/chat/completions` proxying
 - OpenAI-compatible `/v1/models` discovery for Grok CLI custom endpoints
 - Model allow-lists for custom API keys
+- Admin key revocation for compromised or retired token sets
 - Admin routes for account and key registration
 - Structured logs with token/header redaction
 - Vite React dashboard with PWA manifest and OpenGraph metadata
@@ -24,6 +25,7 @@ The first supported upstreams are the Grok CLI chat proxy and the public xAI API
 POST /api/admin/accounts
 POST /api/admin/oauth/start
 POST /api/admin/keys
+POST /api/admin/keys/{id}/revoke
 GET  /api/admin/accounts
 GET  /api/admin/keys
 GET  /api/oauth/callback

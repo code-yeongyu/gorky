@@ -62,6 +62,28 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
     )
   })
 
+  app.post("/api/admin/keys/:id/revoke", async (c) => {
+    const auth = requireAdmin(c.req.raw.headers, deps.adminToken)
+    if (auth) {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_auth_failed", 401)
+      return auth
+    }
+
+    const key = await deps.store.revokeApiKey(c.req.param("id"), deps.now())
+    if (!key) {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_key_revoke_failed", 404, {
+        errorCode: "key_not_found",
+      })
+      return c.json(toOpenAiError("invalid_request_error", "key_not_found", "Key not found"), 404)
+    }
+
+    logAdminEvent(deps, c.req.raw, c.req.path, "admin_key_revoked", 200, {
+      keyPrefix: key.keyPrefix,
+      revokedAt: key.revokedAt,
+    })
+    return c.json({ key: redactApiKey(key) })
+  })
+
   app.post("/api/admin/accounts", async (c) => {
     const auth = requireAdmin(c.req.raw.headers, deps.adminToken)
     if (auth) {

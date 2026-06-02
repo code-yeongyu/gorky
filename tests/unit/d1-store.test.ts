@@ -94,10 +94,19 @@ class FakeD1Statement {
       })
     }
 
-    if (this.sql.includes("UPDATE api_keys")) {
+    if (this.sql.includes("UPDATE api_keys") && this.sql.includes("last_used_at")) {
       const apiKey = this.db.apiKeys.get(String(this.bindings[1]))
       if (apiKey) {
         apiKey.last_used_at = this.bindings[0]
+      }
+    }
+
+    if (this.sql.includes("UPDATE api_keys") && this.sql.includes("revoked_at")) {
+      const apiKey = [...this.db.apiKeys.values()].find(
+        (candidate) => candidate.id === this.bindings[1],
+      )
+      if (apiKey) {
+        apiKey.revoked_at = apiKey.revoked_at ?? this.bindings[0]
       }
     }
 
@@ -112,6 +121,11 @@ class FakeD1Statement {
   }
 
   async first(): Promise<ApiKeyRow | null> {
+    if (this.sql.includes("WHERE id")) {
+      return (
+        [...this.db.apiKeys.values()].find((candidate) => candidate.id === this.bindings[0]) ?? null
+      )
+    }
     return this.db.apiKeys.get(String(this.bindings[0])) ?? null
   }
 }
@@ -192,5 +206,32 @@ describe("D1 store", () => {
 
     // Then
     expect(found?.lastUsedAt).toBe(1_780_000_123_000)
+  })
+
+  it("Given an api key record When revoking Then revoked timestamp round-trips", async () => {
+    // Given
+    const db = new FakeD1Database()
+    const store = createD1Store(db as unknown as D1Database, "0123456789abcdef0123456789abcdef")
+    const record: ApiKeyRecord = {
+      id: "key_1",
+      keyHash: "hash_1",
+      keyPrefix: "gorky_123456",
+      name: "qa",
+      allowedModels: ["grok-build"],
+      createdAt: 1_780_000_000_000,
+      lastUsedAt: null,
+      revokedAt: null,
+      deactivatedAt: null,
+    }
+
+    // When
+    await store.saveApiKey(record)
+    const revoked = await store.revokeApiKey(record.id, 1_780_000_456_000)
+
+    // Then
+    expect(revoked).toMatchObject({
+      id: record.id,
+      revokedAt: 1_780_000_456_000,
+    })
   })
 })
