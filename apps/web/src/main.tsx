@@ -8,6 +8,7 @@ import {
   fetchKeys,
   fetchModels,
   requestJson,
+  revokeKey,
 } from "./api"
 import { AccountList, KeyForm, KeyList, ManualAccountForm, OAuthForm } from "./components"
 import "./styles.css"
@@ -108,6 +109,19 @@ function App(): React.ReactElement {
       })
     } catch (error) {
       setNotice({ kind: "error", message: messageFromError(error) })
+    }
+  }
+
+  async function revokeApiKey(keyId: string): Promise<void> {
+    try {
+      setIsLoading(true)
+      await revokeKey(adminToken, keyId)
+      await refreshDashboard()
+      setNotice({ kind: "success", message: "API key revoked." })
+    } catch (error) {
+      setNotice({ kind: "error", message: messageFromError(error) })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -217,7 +231,7 @@ function App(): React.ReactElement {
               <h2>Custom API keys</h2>
               <p>Keys are hash-stored and returned once.</p>
             </div>
-            <KeyList apiKeys={apiKeys} />
+            <KeyList apiKeys={apiKeys} isBusy={isLoading} onRevoke={revokeApiKey} />
             <KeyForm models={modelOptions} onSubmit={createKey} />
             {generatedKey ? (
               <output className="key-output" aria-label="Generated API key">

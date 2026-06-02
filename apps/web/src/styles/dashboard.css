@@ -151,6 +151,13 @@ nav a[aria-current="page"] {
   white-space: nowrap;
 }
 
+.key-actions {
+  align-items: end;
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
 .empty-state {
   border: 1px dashed var(--border-default);
   border-radius: 6px;
@@ -182,6 +189,11 @@ nav a[aria-current="page"] {
   .key-row,
   .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+
+  .key-actions {
+    align-items: start;
+    justify-items: start;
   }
 
   .dashboard-grid .panel:first-child {

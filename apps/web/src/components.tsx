@@ -28,7 +28,11 @@ export function AccountList(props: {
   )
 }
 
-export function KeyList(props: { readonly apiKeys: readonly ApiKeyRow[] }): React.ReactElement {
+export function KeyList(props: {
+  readonly apiKeys: readonly ApiKeyRow[]
+  readonly isBusy: boolean
+  readonly onRevoke: (keyId: string) => void
+}): React.ReactElement {
   if (!props.apiKeys.length) {
     return <p className="empty-state">No keys loaded yet.</p>
   }
@@ -46,9 +50,19 @@ export function KeyList(props: { readonly apiKeys: readonly ApiKeyRow[] }): Reac
             </p>
           </div>
           <ModelChips models={apiKey.allowedModels} label={`${apiKey.name} allowed models`} />
-          <span className="last-used">
-            {apiKey.lastUsedAt ? formatDate(apiKey.lastUsedAt) : "unused"}
-          </span>
+          <div className="key-actions">
+            <span className="last-used">
+              {apiKey.lastUsedAt ? formatDate(apiKey.lastUsedAt) : "unused"}
+            </span>
+            <button
+              type="button"
+              className="button-danger"
+              disabled={props.isBusy || keyStatus(apiKey) !== "active"}
+              onClick={() => props.onRevoke(apiKey.id)}
+            >
+              Revoke
+            </button>
+          </div>
         </article>
       ))}
     </div>

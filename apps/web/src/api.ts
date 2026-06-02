@@ -52,6 +52,17 @@ export async function fetchKeys(adminToken: string): Promise<readonly ApiKeyRow[
   return body.keys
 }
 
+export async function revokeKey(adminToken: string, keyId: string): Promise<ApiKeyRow> {
+  const body = await requestJson<{ readonly key: ApiKeyRow }>(
+    `/api/admin/keys/${encodeURIComponent(keyId)}/revoke`,
+    {
+      method: "POST",
+      adminToken,
+    },
+  )
+  return body.key
+}
+
 export async function requestJson<T = unknown>(
   path: string,
   input: { readonly method: string; readonly adminToken?: string; readonly body?: unknown },

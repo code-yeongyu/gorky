@@ -96,6 +96,16 @@ fieldset {
   overflow-wrap: anywhere;
 }
 
+.button-danger {
+  border-color: var(--status-error);
+  color: var(--status-error);
+}
+
+.button-danger:disabled {
+  border-color: var(--border-default);
+  color: var(--text-tertiary);
+}
+
 @media (max-width: 860px) {
   .token-form {
     grid-template-columns: 1fr;
