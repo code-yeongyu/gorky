@@ -10,6 +10,7 @@ const REFRESH_SKEW_MS = 5 * 60 * 1000
 type EnsureFreshAccountTokenInput = {
   readonly account: AccountTokenRecord
   readonly client: TokenRefreshClient
+  readonly force?: boolean
   readonly now: number
   readonly store: TokenStore
 }
@@ -17,7 +18,7 @@ type EnsureFreshAccountTokenInput = {
 export async function ensureFreshAccountToken(
   input: EnsureFreshAccountTokenInput,
 ): Promise<FreshAccountResult> {
-  if (input.account.expiresAt - input.now > REFRESH_SKEW_MS) {
+  if (!input.force && input.account.expiresAt - input.now > REFRESH_SKEW_MS) {
     return { kind: "success", account: input.account }
   }
 

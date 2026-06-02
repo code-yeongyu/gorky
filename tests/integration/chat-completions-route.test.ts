@@ -136,6 +136,80 @@ describe("chat completions route", () => {
     expect(store.accounts[0]?.refreshToken).toBe("must-remain")
   })
 
+  it("Given upstream rejects a fresh-looking token When chat completions is called Then it refreshes and retries once", async () => {
+    // Given
+    const apiKey = await createApiKey({
+      name: "qa-key",
+      allowedModels: ["grok-build"],
+      now: 1_780_000_000_000,
+      secretSeed: "auth-retry",
+    })
+    const account: AccountTokenRecord = {
+      id: "acct_1",
+      email: "qa@example.com",
+      accessToken: "stale-access-token",
+      refreshToken: "refresh-sentinel",
+      expiresAt: 1_780_100_000_000,
+      modelIds: ["grok-build"],
+      status: "active",
+      lastUsedAt: null,
+    }
+    const store = createMemoryStore({ accounts: [account], apiKeys: [apiKey.record] })
+    const captures: { readonly authorization: string | null }[] = []
+    const logs: unknown[] = []
+    const app = createApp({
+      store,
+      adminToken: "dev-admin-token",
+      now: () => 1_780_000_000_000,
+      logger: (event) => {
+        logs.push(event)
+      },
+      upstream: async (request) => {
+        captures.push({ authorization: request.headers.get("Authorization") })
+        if (captures.length === 1) {
+          return Response.json({ error: { code: "unauthorized" } }, { status: 401 })
+        }
+        return Response.json({ choices: [{ message: { content: "pong" } }] })
+      },
+      refreshClient: async (): Promise<TokenRefreshResult> => ({
+        kind: "success",
+        accessToken: "new-access-token",
+        refreshToken: "new-refresh-token",
+        expiresInSeconds: 21_600,
+      }),
+    })
+
+    // When
+    const response = await app.request("/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": apiKey.plaintextKey,
+      },
+      body: JSON.stringify({
+        model: "grok-build",
+        messages: [{ role: "user", content: "ping" }],
+      }),
+    })
+    const logText = JSON.stringify(logs)
+
+    // Then
+    expect(response.status).toBe(200)
+    expect(captures).toEqual([
+      { authorization: "Bearer stale-access-token" },
+      { authorization: "Bearer new-access-token" },
+    ])
+    expect(store.accounts[0]).toMatchObject({
+      accessToken: "new-access-token",
+      refreshToken: "new-refresh-token",
+      status: "active",
+      lastUsedAt: 1_780_000_000_000,
+    })
+    expect(logText).toContain("upstream_auth_retry")
+    expect(logText).not.toContain("refresh-sentinel")
+    expect(logText).not.toContain("new-refresh-token")
+  })
+
   it("Given no API key When chat completions is called Then authentication failure is logged without secrets", async () => {
     // Given
     const logs: unknown[] = []

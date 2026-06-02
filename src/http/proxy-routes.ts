@@ -2,6 +2,7 @@ import type { Hono } from "hono"
 import type { AppDependencies } from "../app"
 import { ensureFreshAccountToken } from "../domain/account-refresh"
 import { selectAccountForModel } from "../domain/account-selection"
+import type { AccountTokenRecord, ApiError } from "../domain/types"
 import { authenticateApiKey, getRequestId, readJson, toOpenAiError } from "./auth"
 import { ChatCompletionRequestSchema, ResponsesRequestSchema } from "./schemas"
 
@@ -31,20 +32,32 @@ export function registerProxyRoutes(
       return c.json({ error: prepared.error }, prepared.status)
     }
 
-    const upstreamRequest = new Request(`${config.cliProxyBaseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${prepared.account.accessToken}`,
-        "X-XAI-Token-Auth": "xai-grok-cli",
-        "content-type": "application/json",
-        "x-grok-client-version": config.grokClientVersion,
-        "x-grok-model-override": parsed.data.model,
-      },
-      body: JSON.stringify(parsed.data),
+    const upstream = await forwardWithAuthRetry({
+      deps,
+      request: c.req.raw,
+      path: c.req.path,
+      model: parsed.data.model,
+      prepared,
+      createRequest: (accessToken) =>
+        new Request(`${config.cliProxyBaseUrl}/chat/completions`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "X-XAI-Token-Auth": "xai-grok-cli",
+            "content-type": "application/json",
+            "x-grok-client-version": config.grokClientVersion,
+            "x-grok-model-override": parsed.data.model,
+          },
+          body: JSON.stringify(parsed.data),
+        }),
     })
-    const upstreamResponse = await deps.upstream(upstreamRequest)
+    if (upstream.kind === "failure") {
+      logProxyFailure(deps, c.req.raw, c.req.path, upstream.status, parsed.data.model, upstream)
+      return c.json({ error: upstream.error }, upstream.status)
+    }
+
     const usedAt = deps.now()
-    await deps.store.touchAccount(prepared.account.id, usedAt)
+    await deps.store.touchAccount(upstream.account.id, usedAt)
     await deps.store.touchApiKey(prepared.keyHash, usedAt)
     deps.logger?.({
       event: "chat_completion",
@@ -52,10 +65,10 @@ export function registerProxyRoutes(
       path: c.req.path,
       method: c.req.method,
       keyPrefix: prepared.keyPrefix,
-      status: upstreamResponse.status,
+      status: upstream.response.status,
       model: parsed.data.model,
     })
-    return upstreamResponse
+    return upstream.response
   })
 
   app.post("/v1/responses", async (c) => {
@@ -73,17 +86,29 @@ export function registerProxyRoutes(
       return c.json({ error: prepared.error }, prepared.status)
     }
 
-    const upstreamRequest = new Request(`${config.publicApiBaseUrl}/responses`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${prepared.account.accessToken}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(parsed.data),
+    const upstream = await forwardWithAuthRetry({
+      deps,
+      request: c.req.raw,
+      path: c.req.path,
+      model: parsed.data.model,
+      prepared,
+      createRequest: (accessToken) =>
+        new Request(`${config.publicApiBaseUrl}/responses`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(parsed.data),
+        }),
     })
-    const upstreamResponse = await deps.upstream(upstreamRequest)
+    if (upstream.kind === "failure") {
+      logProxyFailure(deps, c.req.raw, c.req.path, upstream.status, parsed.data.model, upstream)
+      return c.json({ error: upstream.error }, upstream.status)
+    }
+
     const usedAt = deps.now()
-    await deps.store.touchAccount(prepared.account.id, usedAt)
+    await deps.store.touchAccount(upstream.account.id, usedAt)
     await deps.store.touchApiKey(prepared.keyHash, usedAt)
     deps.logger?.({
       event: "responses",
@@ -91,11 +116,80 @@ export function registerProxyRoutes(
       path: c.req.path,
       method: c.req.method,
       keyPrefix: prepared.keyPrefix,
-      status: upstreamResponse.status,
+      status: upstream.response.status,
       model: parsed.data.model,
     })
-    return upstreamResponse
+    return upstream.response
   })
+}
+
+type PreparedAccount = {
+  readonly kind: "success"
+  readonly account: AccountTokenRecord
+  readonly keyHash: string
+  readonly keyPrefix: string
+}
+
+async function forwardWithAuthRetry(input: {
+  readonly deps: AppDependencies
+  readonly request: Request
+  readonly path: string
+  readonly model: string
+  readonly prepared: PreparedAccount
+  readonly createRequest: (accessToken: string) => Request
+}): Promise<
+  | { readonly kind: "success"; readonly response: Response; readonly account: AccountTokenRecord }
+  | {
+      readonly kind: "failure"
+      readonly error: ApiError
+      readonly status: 502
+      readonly keyPrefix: string
+    }
+> {
+  const firstResponse = await input.deps.upstream(
+    input.createRequest(input.prepared.account.accessToken),
+  )
+  if (!isUpstreamAuthFailure(firstResponse.status)) {
+    return { kind: "success", response: firstResponse, account: input.prepared.account }
+  }
+
+  const refreshed = await ensureFreshAccountToken({
+    account: input.prepared.account,
+    client: { refresh: input.deps.refreshClient },
+    force: true,
+    now: input.deps.now(),
+    store: input.deps.store,
+  })
+  if (refreshed.kind === "failure") {
+    return {
+      kind: "failure",
+      error: refreshed.error,
+      status: 502,
+      keyPrefix: input.prepared.keyPrefix,
+    }
+  }
+
+  input.deps.logger?.({
+    event: "upstream_auth_retry",
+    requestId: getRequestId(input.request.headers),
+    path: input.path,
+    method: input.request.method,
+    keyPrefix: input.prepared.keyPrefix,
+    status: firstResponse.status,
+    model: input.model,
+    metadata: {
+      upstreamStatus: firstResponse.status,
+    },
+  })
+
+  const retryResponse = await input.deps.upstream(
+    input.createRequest(refreshed.account.accessToken),
+  )
+  return { kind: "success", response: retryResponse, account: refreshed.account }
+}
+
+function isUpstreamAuthFailure(status: number): boolean {
+  return status === 401 || status === 403
 }
 
 async function prepareAccount(deps: AppDependencies, headers: Headers, model: string) {

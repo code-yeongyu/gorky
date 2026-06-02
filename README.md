@@ -10,6 +10,7 @@ The first supported upstreams are the Grok CLI chat proxy and the public xAI API
 - D1-backed account and custom key storage
 - AES-GCM encrypted OAuth access/refresh token columns
 - Refresh-token rotation with structured API errors on failure
+- One retry with forced refresh when upstream rejects a session token
 - OpenAI-style `/v1/chat/completions` proxying
 - OpenAI-compatible `/v1/models` discovery for Grok CLI custom endpoints
 - Model allow-lists for custom API keys
@@ -121,3 +122,4 @@ every CLI-available model is exposed by Gorky before release.
 - API keys are stored by SHA-256 hash and returned only once.
 - Logs retain request IDs, key prefixes, status, model, and latency context while redacting credentials.
 - Refresh failures return structured API errors and preserve the stored refresh token.
+- Upstream `401` and `403` responses trigger one forced refresh and retry before surfacing failure.
