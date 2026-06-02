@@ -76,6 +76,17 @@ export function createD1Store(db: D1Database, tokenSecret: string): GorkyStore {
         )
         .run()
     },
+    disableAccount: async (accountId) => {
+      await db
+        .prepare("UPDATE accounts SET status = ? WHERE id = ?")
+        .bind("disabled", accountId)
+        .run()
+      const row = await db.prepare("SELECT * FROM accounts WHERE id = ?").bind(accountId).first()
+      if (!row) {
+        return null
+      }
+      return accountFromRow(AccountRowSchema.parse(row), tokenSecret)
+    },
     saveApiKey: async (record) => {
       await db
         .prepare(

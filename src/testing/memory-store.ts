@@ -30,6 +30,16 @@ export function createMemoryStore(input: MemoryStoreInput): MemoryStore {
       }
       accounts.push(account)
     },
+    disableAccount: async (accountId) => {
+      const index = accounts.findIndex((candidate) => candidate.id === accountId)
+      const account = accounts[index]
+      if (!account) {
+        return null
+      }
+      const disabled = { ...account, status: "disabled" as const }
+      accounts.splice(index, 1, disabled)
+      return disabled
+    },
     saveApiKey: async (record) => {
       apiKeys.push(record)
     },

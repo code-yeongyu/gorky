@@ -80,6 +80,13 @@ class FakeD1Statement {
       }
     }
 
+    if (this.sql.includes("UPDATE accounts") && this.sql.includes("status = ?")) {
+      const account = this.db.accounts.get(String(this.bindings[1]))
+      if (account) {
+        account.status = this.bindings[0]
+      }
+    }
+
     if (this.sql.includes("INSERT INTO api_keys")) {
       this.db.apiKeys.set(String(this.bindings[1]), {
         id: this.bindings[0],
@@ -120,8 +127,11 @@ class FakeD1Statement {
     return { success: true, meta: {}, results: [...this.db.accounts.values()] }
   }
 
-  async first(): Promise<ApiKeyRow | null> {
-    if (this.sql.includes("WHERE id")) {
+  async first(): Promise<AccountRow | ApiKeyRow | null> {
+    if (this.sql.includes("FROM accounts") && this.sql.includes("WHERE id")) {
+      return this.db.accounts.get(String(this.bindings[0])) ?? null
+    }
+    if (this.sql.includes("FROM api_keys") && this.sql.includes("WHERE id")) {
       return (
         [...this.db.apiKeys.values()].find((candidate) => candidate.id === this.bindings[0]) ?? null
       )
@@ -155,6 +165,34 @@ describe("D1 store", () => {
     expect(storedRow?.access_token_ciphertext).not.toBe(account.accessToken)
     expect(storedRow?.refresh_token_ciphertext).not.toBe(account.refreshToken)
     expect(listed[0]).toEqual(account)
+  })
+
+  it("Given an account When disabling Then status round-trips without token loss", async () => {
+    // Given
+    const db = new FakeD1Database()
+    const store = createD1Store(db as unknown as D1Database, "0123456789abcdef0123456789abcdef")
+    const account: AccountTokenRecord = {
+      id: "acct_1",
+      email: "qa@example.com",
+      accessToken: "SENSITIVE_ACCESS_SENTINEL",
+      refreshToken: "SENSITIVE_REFRESH_SENTINEL",
+      expiresAt: 1_780_000_000_000,
+      modelIds: ["grok-build"],
+      status: "active",
+      lastUsedAt: null,
+    }
+
+    // When
+    await store.saveAccount(account)
+    const disabled = await store.disableAccount(account.id)
+
+    // Then
+    expect(disabled).toMatchObject({
+      id: account.id,
+      status: "disabled",
+      accessToken: account.accessToken,
+      refreshToken: account.refreshToken,
+    })
   })
 
   it("Given an api key record When saving and listing Then JSON model restrictions round-trip", async () => {

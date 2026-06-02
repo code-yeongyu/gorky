@@ -146,17 +146,47 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
       statuses: accounts.map((account) => account.status),
     })
     return c.json({
-      accounts: accounts.map((account) => ({
-        id: account.id,
-        email: account.email,
-        principalType: "User",
-        expiresAt: account.expiresAt,
-        modelIds: account.modelIds,
-        status: account.status,
-        lastUsedAt: account.lastUsedAt,
-      })),
+      accounts: accounts.map(redactAccount),
     })
   })
+
+  app.post("/api/admin/accounts/:id/disable", async (c) => {
+    const auth = requireAdmin(c.req.raw.headers, deps.adminToken)
+    if (auth) {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_auth_failed", 401)
+      return auth
+    }
+
+    const account = await deps.store.disableAccount(c.req.param("id"))
+    if (!account) {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_disable_failed", 404, {
+        errorCode: "account_not_found",
+      })
+      return c.json(
+        toOpenAiError("invalid_request_error", "account_not_found", "Account not found"),
+        404,
+      )
+    }
+
+    logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_disabled", 200, {
+      accountId: account.id,
+      modelIds: account.modelIds,
+      status: account.status,
+    })
+    return c.json({ account: redactAccount(account) })
+  })
+}
+
+function redactAccount(account: AccountTokenRecord) {
+  return {
+    id: account.id,
+    email: account.email,
+    principalType: "User",
+    expiresAt: account.expiresAt,
+    modelIds: account.modelIds,
+    status: account.status,
+    lastUsedAt: account.lastUsedAt,
+  }
 }
 
 function redactApiKey(key: ApiKeyRecord) {
