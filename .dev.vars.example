@@ -1,0 +1,2 @@
+ADMIN_TOKEN=replace-with-local-admin-token
+TOKEN_ENCRYPTION_SECRET=replace-with-32-byte-local-secret

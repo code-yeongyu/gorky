@@ -1,0 +1,7 @@
+node_modules/
+dist/
+apps/web/dist/
+.wrangler/
+.dev.vars
+.DS_Store
+.omo/
