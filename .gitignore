@@ -5,3 +5,4 @@ apps/web/dist/
 .dev.vars
 .DS_Store
 .omo/
+.qa/
