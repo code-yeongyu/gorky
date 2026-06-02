@@ -1,0 +1,17 @@
+{
+  "name": "Gorky",
+  "short_name": "Gorky",
+  "description": "Secure Grok OAuth account routing for custom API keys.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1f2228",
+  "theme_color": "#1f2228",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
