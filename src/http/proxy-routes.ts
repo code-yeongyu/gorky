@@ -27,6 +27,7 @@ export function registerProxyRoutes(
 
     const prepared = await prepareAccount(deps, c.req.raw.headers, parsed.data.model)
     if (prepared.kind === "failure") {
+      logProxyFailure(deps, c.req.raw, c.req.path, prepared.status, parsed.data.model, prepared)
       return c.json({ error: prepared.error }, prepared.status)
     }
 
@@ -66,6 +67,7 @@ export function registerProxyRoutes(
 
     const prepared = await prepareAccount(deps, c.req.raw.headers, parsed.data.model)
     if (prepared.kind === "failure") {
+      logProxyFailure(deps, c.req.raw, c.req.path, prepared.status, parsed.data.model, prepared)
       return c.json({ error: prepared.error }, prepared.status)
     }
 
@@ -107,6 +109,7 @@ async function prepareAccount(deps: AppDependencies, headers: Headers, model: st
       error: toOpenAiError("invalid_request_error", "model_unavailable", "No account can use model")
         .error,
       status: 503,
+      keyPrefix: auth.record.keyPrefix,
     } as const
   }
 
@@ -117,7 +120,12 @@ async function prepareAccount(deps: AppDependencies, headers: Headers, model: st
     store: deps.store,
   })
   if (fresh.kind === "failure") {
-    return { kind: "failure", error: fresh.error, status: 502 } as const
+    return {
+      kind: "failure",
+      error: fresh.error,
+      status: 502,
+      keyPrefix: auth.record.keyPrefix,
+    } as const
   }
 
   return {
@@ -126,4 +134,30 @@ async function prepareAccount(deps: AppDependencies, headers: Headers, model: st
     keyHash: auth.record.keyHash,
     keyPrefix: auth.record.keyPrefix,
   } as const
+}
+
+function logProxyFailure(
+  deps: AppDependencies,
+  request: Request,
+  path: string,
+  status: number,
+  model: string,
+  failure: {
+    readonly error: { readonly code: string; readonly type: string }
+    readonly keyPrefix?: string
+  },
+): void {
+  const event = {
+    event: "proxy_request_failed",
+    requestId: getRequestId(request.headers),
+    path,
+    method: request.method,
+    status,
+    model,
+    metadata: {
+      errorCode: failure.error.code,
+      errorType: failure.error.type,
+    },
+  }
+  deps.logger?.(failure.keyPrefix ? { ...event, keyPrefix: failure.keyPrefix } : event)
 }

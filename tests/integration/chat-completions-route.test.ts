@@ -87,10 +87,14 @@ describe("chat completions route", () => {
       lastUsedAt: null,
     }
     const store = createMemoryStore({ accounts: [account], apiKeys: [apiKey.record] })
+    const logs: unknown[] = []
     const app = createApp({
       store,
       adminToken: "dev-admin-token",
       now: () => 1_780_000_000_000,
+      logger: (event) => {
+        logs.push(event)
+      },
       upstream: async () => Response.json({ unreachable: true }),
       refreshClient: async (): Promise<TokenRefreshResult> => ({
         kind: "failure",
@@ -112,6 +116,7 @@ describe("chat completions route", () => {
       }),
     })
     const body = await response.json()
+    const logText = JSON.stringify(logs)
 
     // Then
     expect(response.status).toBe(502)
@@ -121,7 +126,52 @@ describe("chat completions route", () => {
         code: "invalid_grant",
       },
     })
+    expect(logText).toContain("proxy_request_failed")
+    expect(logText).toContain("invalid_grant")
+    expect(logText).toContain(apiKey.record.keyPrefix)
+    expect(logText).not.toContain(apiKey.plaintextKey)
+    expect(logText).not.toContain("must-remain")
     expect(store.accounts[0]?.refreshToken).toBe("must-remain")
+  })
+
+  it("Given no API key When chat completions is called Then authentication failure is logged without secrets", async () => {
+    // Given
+    const logs: unknown[] = []
+    const app = createApp({
+      store: createMemoryStore({ accounts: [], apiKeys: [] }),
+      adminToken: "dev-admin-token",
+      now: () => 1_780_000_000_000,
+      logger: (event) => {
+        logs.push(event)
+      },
+      upstream: async () => Response.json({ unreachable: true }),
+      refreshClient: async (): Promise<TokenRefreshResult> => ({
+        kind: "success",
+        accessToken: "unused",
+        refreshToken: null,
+        expiresInSeconds: 21_600,
+      }),
+    })
+
+    // When
+    const response = await app.request("/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "grok-build",
+        messages: [{ role: "user", content: "ping" }],
+      }),
+    })
+    const logText = JSON.stringify(logs)
+
+    // Then
+    expect(response.status).toBe(401)
+    expect(logText).toContain("proxy_request_failed")
+    expect(logText).toContain("missing_api_key")
+    expect(logText).toContain("grok-build")
+    expect(logText).not.toContain("ping")
   })
 
   it("Given a valid gorky key When responses is called Then it forwards without Grok CLI header", async () => {
