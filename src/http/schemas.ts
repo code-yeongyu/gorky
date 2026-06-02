@@ -11,11 +11,9 @@ export const ChatCompletionRequestSchema = z.object({
   max_tokens: z.number().int().positive().optional(),
 })
 
-export const ResponsesRequestSchema = z
-  .object({
-    model: z.string().min(1),
-  })
-  .passthrough()
+export const ResponsesRequestSchema = z.looseObject({
+  model: z.string().min(1),
+})
 
 export const CreateKeyRequestSchema = z.object({
   name: z.string().min(1),
@@ -23,7 +21,7 @@ export const CreateKeyRequestSchema = z.object({
 })
 
 export const RegisterAccountRequestSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   accessToken: z.string().min(1),
   refreshToken: z.string().min(1),
   expiresAt: z.number().int().positive(),

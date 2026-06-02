@@ -26,6 +26,7 @@ head_sampling_rate = 1
 GROK_CLIENT_VERSION = "0.2.16"
 GROK_CLI_PROXY_BASE_URL = "https://cli-chat-proxy.grok.com/v1"
 GROK_PUBLIC_API_BASE_URL = "https://api.x.ai/v1"
+GROK_MODEL_IDS = "grok-composer-2.5-fast,grok-build"
 AUTH_ISSUER = "https://auth.x.ai"
 OIDC_CLIENT_ID = "b1a00492-073a-47ea-816f-4c329264a828"
 GORKY_QA_MODE = "false"
@@ -33,6 +34,15 @@ GORKY_QA_MODE = "false"
 [env.production]
 name = "gorky"
 routes = [{ pattern = "gorky.labs.mengmota.com", custom_domain = true }]
+
+[env.production.vars]
+GROK_CLIENT_VERSION = "0.2.16"
+GROK_CLI_PROXY_BASE_URL = "https://cli-chat-proxy.grok.com/v1"
+GROK_PUBLIC_API_BASE_URL = "https://api.x.ai/v1"
+GROK_MODEL_IDS = "grok-composer-2.5-fast,grok-build"
+AUTH_ISSUER = "https://auth.x.ai"
+OIDC_CLIENT_ID = "b1a00492-073a-47ea-816f-4c329264a828"
+GORKY_QA_MODE = "false"
 
 [[env.production.d1_databases]]
 binding = "DB"

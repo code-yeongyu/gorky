@@ -1,5 +1,5 @@
 import { Hono } from "hono"
-import { GROK_MODELS } from "./domain/models"
+import { DEFAULT_GROK_MODELS } from "./domain/models"
 import type { TokenRefreshResult } from "./domain/types"
 import { registerAdminRoutes } from "./http/admin-routes"
 import { extractApiKey, getRequestId } from "./http/auth"
@@ -22,6 +22,7 @@ export type AppDependencies = {
   readonly grokClientVersion?: string
   readonly cliProxyBaseUrl?: string
   readonly publicApiBaseUrl?: string
+  readonly models?: readonly string[]
 }
 
 export function createApp(deps: AppDependencies): Hono {
@@ -29,10 +30,22 @@ export function createApp(deps: AppDependencies): Hono {
   const grokClientVersion = deps.grokClientVersion ?? DEFAULT_GROK_CLIENT_VERSION
   const cliProxyBaseUrl = deps.cliProxyBaseUrl ?? DEFAULT_CLI_PROXY_BASE_URL
   const publicApiBaseUrl = deps.publicApiBaseUrl ?? DEFAULT_PUBLIC_API_BASE_URL
+  const models = deps.models ?? DEFAULT_GROK_MODELS
 
   app.get("/health", (c) => c.json({ status: "ok", service: "gorky" }))
 
-  app.get("/api/models", (c) => c.json({ models: GROK_MODELS }))
+  app.get("/api/models", (c) => c.json({ models }))
+  app.get("/v1/models", (c) =>
+    c.json({
+      object: "list",
+      data: models.map((model) => ({
+        id: model,
+        object: "model",
+        created: 0,
+        owned_by: "xai",
+      })),
+    }),
+  )
 
   app.get("/__qa/redaction", (c) => {
     const requestId = getRequestId(c.req.raw.headers)

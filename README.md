@@ -11,6 +11,7 @@ The first supported upstreams are the Grok CLI chat proxy and the public xAI API
 - AES-GCM encrypted OAuth access/refresh token columns
 - Refresh-token rotation with structured API errors on failure
 - OpenAI-style `/v1/chat/completions` proxying
+- OpenAI-compatible `/v1/models` discovery for Grok CLI custom endpoints
 - Model allow-lists for custom API keys
 - Admin routes for account and key registration
 - Structured logs with token/header redaction
@@ -22,7 +23,9 @@ The first supported upstreams are the Grok CLI chat proxy and the public xAI API
 POST /api/admin/accounts
 POST /api/admin/keys
 GET  /api/admin/accounts
+GET  /v1/models
 POST /v1/chat/completions
+POST /v1/responses
 GET  /health
 ```
 
@@ -31,6 +34,23 @@ CLI proxy calls include the required header:
 ```http
 x-grok-client-version: 0.2.16
 ```
+
+## Use With Grok CLI
+
+Create a Gorky API key in the dashboard or admin API, then point Grok CLI at
+the deployed Worker:
+
+```bash
+export GROK_MODELS_BASE_URL="https://gorky.code-yeon-gyu.workers.dev/v1"
+export GROK_CODE_XAI_API_KEY="gorky_..."
+grok models
+grok -m grok-build -p "Say hello through Gorky"
+```
+
+`GROK_MODELS_BASE_URL` makes Grok fetch
+`https://gorky.code-yeon-gyu.workers.dev/v1/models`, and
+`GROK_CODE_XAI_API_KEY` is sent as `Authorization: Bearer ...`. The same key
+also works with `x-api-key` for direct API calls.
 
 ## Local Setup
 
