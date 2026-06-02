@@ -37,10 +37,7 @@ export function OAuthForm(props: {
       <h3>OAuth start</h3>
       <label>
         Callback URL
-        <input
-          name="redirectUri"
-          defaultValue={`${globalThis.location.origin}/api/oauth/callback`}
-        />
+        <input name="redirectUri" autoComplete="off" placeholder="Default callback URL" />
       </label>
       <CheckboxGroup name="modelIds" models={props.models} />
       <button type="submit">Open OAuth</button>

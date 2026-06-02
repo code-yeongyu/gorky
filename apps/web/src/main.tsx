@@ -62,7 +62,8 @@ function App(): React.ReactElement {
   async function startOAuth(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
-    const redirectUri = stringField(form, "redirectUri")
+    const redirectUri =
+      stringField(form, "redirectUri") || `${globalThis.location.origin}/api/oauth/callback`
     const selectedModels = form.getAll("modelIds").map(String)
     try {
       const response = await requestJson<{ readonly authorizationUrl: string }>(

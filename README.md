@@ -99,9 +99,13 @@ pnpm test
 pnpm typecheck
 pnpm build
 pnpm exec wrangler deploy --dry-run
+pnpm qa:live
 ```
 
-Manual QA evidence for the current implementation lives under `.omo/ulw-loop/evidence/` in the local workspace and is intentionally not meant for public token-bearing commits.
+`pnpm qa:live` checks the deployed Worker health, model catalogs, admin
+protection, PWA manifest, and desktop/mobile dashboard rendering. Screenshots
+are written to `.qa/`, which is ignored so token-bearing manual evidence does
+not enter public commits.
 
 ## Security Notes
 
