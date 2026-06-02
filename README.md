@@ -54,6 +54,17 @@ grok -m grok-build -p "Say hello through Gorky"
 `GROK_CODE_XAI_API_KEY` is sent as `Authorization: Bearer ...`. The same key
 also works with `x-api-key` for direct API calls.
 
+After authenticating the local Grok CLI, sync every currently available model
+into the Worker config before deploying:
+
+```bash
+GORKY_GROK_BIN=/Users/yeongyu/.grok/bin/grok pnpm models:sync
+pnpm exec wrangler deploy
+```
+
+The sync command refuses to update `wrangler.toml` when `grok models` returns no
+available models, which usually means the CLI is not authenticated yet.
+
 ## Local Setup
 
 ```bash

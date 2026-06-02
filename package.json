@@ -10,6 +10,7 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "build": "pnpm --filter @gorky/web build",
+    "models:sync": "node --experimental-strip-types scripts/sync-grok-models.ts",
     "preview:web": "pnpm --filter @gorky/web preview"
   },
   "dependencies": {
