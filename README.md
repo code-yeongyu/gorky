@@ -24,6 +24,7 @@ POST /api/admin/accounts
 POST /api/admin/oauth/start
 POST /api/admin/keys
 GET  /api/admin/accounts
+GET  /api/admin/keys
 GET  /api/oauth/callback
 GET  /v1/models
 POST /v1/chat/completions

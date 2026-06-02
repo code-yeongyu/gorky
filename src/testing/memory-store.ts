@@ -33,6 +33,7 @@ export function createMemoryStore(input: MemoryStoreInput): MemoryStore {
     saveApiKey: async (record) => {
       apiKeys.push(record)
     },
+    listApiKeys: async () => apiKeys,
     findApiKeyByHash: async (keyHash) => {
       return apiKeys.find((record) => record.keyHash === keyHash) ?? null
     },

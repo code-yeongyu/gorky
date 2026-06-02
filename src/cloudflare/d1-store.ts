@@ -97,6 +97,11 @@ export function createD1Store(db: D1Database, tokenSecret: string): GorkyStore {
         )
         .run()
     },
+    listApiKeys: async () => {
+      const result = await db.prepare("SELECT * FROM api_keys").all()
+      const rows = result.results.map((row) => ApiKeyRowSchema.parse(row))
+      return rows.map(apiKeyFromRow)
+    },
     findApiKeyByHash: async (keyHash) => {
       const row = await db
         .prepare("SELECT * FROM api_keys WHERE key_hash = ?")

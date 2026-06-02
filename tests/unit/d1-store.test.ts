@@ -105,6 +105,9 @@ class FakeD1Statement {
   }
 
   async all() {
+    if (this.sql.includes("FROM api_keys")) {
+      return { success: true, meta: {}, results: [...this.db.apiKeys.values()] }
+    }
     return { success: true, meta: {}, results: [...this.db.accounts.values()] }
   }
 
@@ -140,7 +143,7 @@ describe("D1 store", () => {
     expect(listed[0]).toEqual(account)
   })
 
-  it("Given an api key record When saving and finding Then JSON model restrictions round-trip", async () => {
+  it("Given an api key record When saving and listing Then JSON model restrictions round-trip", async () => {
     // Given
     const db = new FakeD1Database()
     const store = createD1Store(db as unknown as D1Database, "0123456789abcdef0123456789abcdef")
@@ -159,9 +162,11 @@ describe("D1 store", () => {
     // When
     await store.saveApiKey(record)
     const found = await store.findApiKeyByHash(record.keyHash)
+    const listed = await store.listApiKeys()
 
     // Then
     expect(found).toEqual(record)
+    expect(listed).toEqual([record])
   })
 
   it("Given an api key record When touching usage Then last used timestamp round-trips", async () => {

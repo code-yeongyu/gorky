@@ -102,6 +102,52 @@ describe("admin routes", () => {
     expect(store.apiKeys[0]?.keyHash).not.toBe(body.plaintextKey)
   })
 
+  it("Given admin auth When listing keys Then hashes and plaintext keys are not returned", async () => {
+    // Given
+    const store = createMemoryStore({ accounts: [], apiKeys: [] })
+    const app = createApp({
+      store,
+      adminToken: "dev-admin-token",
+      now: () => 1_780_000_000_000,
+      upstream: async () => Response.json({ ok: true }),
+      refreshClient: async (): Promise<TokenRefreshResult> => ({
+        kind: "success",
+        accessToken: "unused",
+        refreshToken: null,
+        expiresInSeconds: 21_600,
+      }),
+    })
+    const created = await app.request("/api/admin/keys", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-admin-token": "dev-admin-token",
+      },
+      body: JSON.stringify({
+        name: "qa-key",
+        allowedModels: ["grok-build"],
+      }),
+    })
+    const createdBody = CreatedKeyResponseSchema.parse(await created.json())
+
+    // When
+    const response = await app.request("/api/admin/keys", {
+      headers: {
+        "x-admin-token": "dev-admin-token",
+      },
+    })
+    const text = await response.text()
+
+    // Then
+    expect(response.status).toBe(200)
+    expect(text).toContain(createdBody.keyPrefix)
+    expect(text).toContain("qa-key")
+    expect(text).toContain("grok-build")
+    expect(text).not.toContain(createdBody.plaintextKey)
+    expect(text).not.toContain(store.apiKeys[0]?.keyHash)
+    expect(text).not.toContain("keyHash")
+  })
+
   it("Given admin auth When listing accounts Then token fields are redacted", async () => {
     // Given
     const account: AccountTokenRecord = {

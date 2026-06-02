@@ -1,11 +1,28 @@
 import type { Hono } from "hono"
 import type { AppDependencies } from "../app"
 import { createApiKey } from "../domain/api-key"
-import type { AccountTokenRecord } from "../domain/types"
+import type { AccountTokenRecord, ApiKeyRecord } from "../domain/types"
 import { getRequestId, readJson, requireAdmin, toOpenAiError } from "./auth"
 import { CreateKeyRequestSchema, RegisterAccountRequestSchema } from "./schemas"
 
 export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
+  app.get("/api/admin/keys", async (c) => {
+    const auth = requireAdmin(c.req.raw.headers, deps.adminToken)
+    if (auth) {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_auth_failed", 401)
+      return auth
+    }
+
+    const keys = await deps.store.listApiKeys()
+    logAdminEvent(deps, c.req.raw, c.req.path, "admin_keys_listed", 200, {
+      count: keys.length,
+      keyPrefixes: keys.map((key) => key.keyPrefix),
+    })
+    return c.json({
+      keys: keys.map(redactApiKey),
+    })
+  })
+
   app.post("/api/admin/keys", async (c) => {
     const auth = requireAdmin(c.req.raw.headers, deps.adminToken)
     if (auth) {
@@ -118,6 +135,19 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
       })),
     })
   })
+}
+
+function redactApiKey(key: ApiKeyRecord) {
+  return {
+    id: key.id,
+    keyPrefix: key.keyPrefix,
+    name: key.name,
+    allowedModels: key.allowedModels,
+    createdAt: key.createdAt,
+    lastUsedAt: key.lastUsedAt,
+    revokedAt: key.revokedAt,
+    deactivatedAt: key.deactivatedAt,
+  }
 }
 
 function logAdminEvent(
