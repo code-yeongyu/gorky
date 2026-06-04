@@ -158,6 +158,13 @@ nav a[aria-current="page"] {
   justify-items: end;
 }
 
+.action-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .empty-state {
   border: 1px dashed var(--border-default);
   border-radius: 6px;

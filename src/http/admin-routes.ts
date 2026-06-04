@@ -1,5 +1,6 @@
 import type { Hono } from "hono"
 import type { AppDependencies } from "../app"
+import { ensureFreshAccountToken } from "../domain/account-refresh"
 import { createApiKey } from "../domain/api-key"
 import type { AccountTokenRecord } from "../domain/types"
 import { logAdminEvent, redactAccount, redactApiKey } from "./admin-presenters"
@@ -201,5 +202,50 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
       status: account.status,
     })
     return c.json({ account: redactAccount(account) })
+  })
+
+  app.post("/api/admin/accounts/:id/refresh", async (c) => {
+    const auth = requireAdmin(c.req.raw.headers, deps.adminToken)
+    if (auth) {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_auth_failed", 401)
+      return auth
+    }
+
+    const accountId = c.req.param("id")
+    const account = (await deps.store.listAccounts()).find(
+      (candidate) => candidate.id === accountId,
+    )
+    if (!account) {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_refresh_failed", 404, {
+        errorCode: "account_not_found",
+      })
+      return c.json(
+        toOpenAiError("invalid_request_error", "account_not_found", "Account not found"),
+        404,
+      )
+    }
+
+    const result = await ensureFreshAccountToken({
+      account,
+      client: { refresh: deps.refreshClient },
+      force: true,
+      now: deps.now(),
+      store: deps.store,
+    })
+    if (result.kind === "failure") {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_refresh_failed", 502, {
+        accountId: result.account.id,
+        errorCode: result.error.code,
+        status: result.account.status,
+      })
+      return c.json(toOpenAiError(result.error.type, result.error.code, result.error.message), 502)
+    }
+
+    logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_refreshed", 200, {
+      accountId: result.account.id,
+      modelIds: result.account.modelIds,
+      status: result.account.status,
+    })
+    return c.json({ account: redactAccount(result.account) })
   })
 }

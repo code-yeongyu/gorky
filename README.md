@@ -26,6 +26,7 @@ The first supported upstreams are the Grok CLI chat proxy and the public xAI API
 POST /api/admin/accounts
 POST /api/admin/accounts/{id}/disable
 POST /api/admin/accounts/{id}/enable
+POST /api/admin/accounts/{id}/refresh
 POST /api/admin/oauth/start
 POST /api/admin/keys
 POST /api/admin/keys/{id}/revoke

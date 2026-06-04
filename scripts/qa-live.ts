@@ -37,6 +37,7 @@ const ADMIN_PROTECTED_REQUESTS = [
   { label: "manual account registration", method: "POST", path: "/api/admin/accounts" },
   { label: "disable account", method: "POST", path: "/api/admin/accounts/acct_live_qa/disable" },
   { label: "enable account", method: "POST", path: "/api/admin/accounts/acct_live_qa/enable" },
+  { label: "refresh account", method: "POST", path: "/api/admin/accounts/acct_live_qa/refresh" },
   { label: "start OAuth registration", method: "POST", path: "/api/admin/oauth/start" },
   { label: "list key sets", method: "GET", path: "/api/admin/keys" },
   { label: "create key set", method: "POST", path: "/api/admin/keys" },

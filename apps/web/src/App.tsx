@@ -9,6 +9,7 @@ import {
   fetchAccounts,
   fetchKeys,
   fetchModels,
+  refreshAccount,
   requestJson,
   revokeKey,
 } from "./api"
@@ -48,7 +49,6 @@ export function App(): React.ReactElement {
       .catch(() => setNotice({ kind: "error", message: "Could not load models." }))
   }, [])
 
-  const defaultModel = models[0] ?? "grok-build"
   const modelOptions = useMemo(() => (models.length ? models : ["grok-build"]), [models])
 
   async function refreshDashboard(token = adminToken): Promise<void> {
@@ -88,7 +88,7 @@ export function App(): React.ReactElement {
           adminToken,
           body: {
             redirectUri,
-            modelIds: selectedModels.length ? selectedModels : [defaultModel],
+            modelIds: selectedModels.length ? selectedModels : [modelOptions[0] ?? "grok-build"],
           },
         },
       )
@@ -121,21 +121,29 @@ export function App(): React.ReactElement {
     }
   }
 
-  async function setRegisteredAccountStatus(
-    accountId: string,
-    nextStatus: "active" | "disabled",
-  ): Promise<void> {
-    const action = nextStatus === "active" ? enableAccount : disableAccount
+  async function runAccountAction(action: () => Promise<unknown>, message: string): Promise<void> {
     try {
       setIsLoading(true)
-      await action(adminToken, accountId)
+      await action()
       await refreshDashboard()
-      setNotice({ kind: "success", message: `Account ${nextStatus}.` })
+      setNotice({ kind: "success", message })
     } catch (error) {
       setNotice({ kind: "error", message: messageFromError(error) })
     } finally {
       setIsLoading(false)
     }
+  }
+
+  async function setRegisteredAccountStatus(
+    accountId: string,
+    nextStatus: "active" | "disabled",
+  ): Promise<void> {
+    const action = nextStatus === "active" ? enableAccount : disableAccount
+    await runAccountAction(() => action(adminToken, accountId), `Account ${nextStatus}.`)
+  }
+
+  async function refreshRegisteredAccount(accountId: string): Promise<void> {
+    await runAccountAction(() => refreshAccount(adminToken, accountId), "Account refreshed.")
   }
 
   async function revokeApiKey(keyId: string): Promise<void> {
@@ -228,6 +236,7 @@ export function App(): React.ReactElement {
               isBusy={isLoading}
               onDisable={(accountId) => setRegisteredAccountStatus(accountId, "disabled")}
               onEnable={(accountId) => setRegisteredAccountStatus(accountId, "active")}
+              onRefresh={refreshRegisteredAccount}
             />
           </section>
 

@@ -66,6 +66,17 @@ export async function enableAccount(adminToken: string, accountId: string): Prom
   return body.account
 }
 
+export async function refreshAccount(adminToken: string, accountId: string): Promise<AccountRow> {
+  const body = await requestJson<{ readonly account: AccountRow }>(
+    `/api/admin/accounts/${encodeURIComponent(accountId)}/refresh`,
+    {
+      method: "POST",
+      adminToken,
+    },
+  )
+  return body.account
+}
+
 export async function fetchKeys(adminToken: string): Promise<readonly ApiKeyRow[]> {
   const body = await requestJson<{ readonly keys: readonly ApiKeyRow[] }>("/api/admin/keys", {
     method: "GET",

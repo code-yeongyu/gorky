@@ -5,6 +5,7 @@ export function AccountList(props: {
   readonly isBusy: boolean
   readonly onDisable: (accountId: string) => void
   readonly onEnable: (accountId: string) => void
+  readonly onRefresh: (accountId: string) => void
 }): React.ReactElement {
   if (!props.accounts.length) {
     return <p className="empty-state">No accounts loaded yet.</p>
@@ -25,21 +26,56 @@ export function AccountList(props: {
             <span className="last-used">
               {account.lastUsedAt ? formatDate(account.lastUsedAt) : "idle"}
             </span>
-            <button
-              type="button"
-              className={account.status === "disabled" ? undefined : "button-danger"}
-              disabled={props.isBusy || !["active", "disabled"].includes(account.status)}
-              onClick={() =>
-                account.status === "disabled"
-                  ? props.onEnable(account.id)
-                  : props.onDisable(account.id)
-              }
-            >
-              {account.status === "disabled" ? "Enable" : "Disable"}
-            </button>
+            <AccountActions
+              account={account}
+              isBusy={props.isBusy}
+              onDisable={props.onDisable}
+              onEnable={props.onEnable}
+              onRefresh={props.onRefresh}
+            />
           </div>
         </article>
       ))}
+    </div>
+  )
+}
+
+function AccountActions(props: {
+  readonly account: AccountRow
+  readonly isBusy: boolean
+  readonly onDisable: (accountId: string) => void
+  readonly onEnable: (accountId: string) => void
+  readonly onRefresh: (accountId: string) => void
+}): React.ReactElement {
+  if (props.account.status === "disabled") {
+    return (
+      <button
+        type="button"
+        disabled={props.isBusy}
+        onClick={() => props.onEnable(props.account.id)}
+      >
+        Enable
+      </button>
+    )
+  }
+
+  return (
+    <div className="action-pair">
+      <button
+        type="button"
+        disabled={props.isBusy}
+        onClick={() => props.onRefresh(props.account.id)}
+      >
+        Refresh
+      </button>
+      <button
+        type="button"
+        className="button-danger"
+        disabled={props.isBusy}
+        onClick={() => props.onDisable(props.account.id)}
+      >
+        Disable
+      </button>
     </div>
   )
 }
