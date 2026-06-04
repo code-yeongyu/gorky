@@ -53,6 +53,12 @@ export type OpenGraphMetadata = {
   readonly twitterCard: string | null
 }
 
+export type PublicAssetResponse = {
+  readonly status: number
+  readonly contentType: string | null
+  readonly label: string
+}
+
 export function assertMatchingModelCatalog(
   apiModels: z.infer<typeof ApiModelsResponseSchema>,
   v1Models: z.infer<typeof V1ModelsResponseSchema>,
@@ -89,6 +95,15 @@ export function assertOpenGraphMetadata(metadata: OpenGraphMetadata): void {
   const missing = requiredEntries.filter((entry) => !entry[1]?.trim()).map((entry) => entry[0])
   if (missing.length) {
     throw new Error(`Missing OpenGraph metadata: ${missing.join(", ")}`)
+  }
+}
+
+export function assertPublicAssetResponse(response: PublicAssetResponse): void {
+  if (response.status !== 200) {
+    throw new Error(`Expected ${response.label} asset to return 200, got ${response.status}`)
+  }
+  if (!response.contentType?.includes("image/")) {
+    throw new Error(`Expected ${response.label} asset to be an image, got ${response.contentType}`)
   }
 }
 

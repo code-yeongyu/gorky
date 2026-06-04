@@ -12,6 +12,7 @@ import {
   assertMatchingModelCatalog,
   assertOpenGraphMetadata,
   assertOAuthUnknownModelResponse,
+  assertPublicAssetResponse,
 } from "../src/domain/live-qa.ts"
 
 const DEFAULT_BASE_URL = "https://gorky.code-yeon-gyu.workers.dev"
@@ -70,6 +71,9 @@ async function runHttpChecks(baseUrl: URL): Promise<void> {
   await runAdminErrorChecks(baseUrl)
 
   const manifest = await getJson(new URL("/manifest.webmanifest", baseUrl), ManifestResponseSchema)
+  for (const icon of manifest.icons) {
+    await verifyPublicAsset(baseUrl, icon.src, "manifest icon")
+  }
   console.log(
     `HTTP checks ok: service=${health.service} models=${apiModels.models.length} admin=${ADMIN_PROTECTED_REQUESTS.length} manifest=${manifest.display}`,
   )
@@ -134,13 +138,15 @@ async function verifyDashboardPage(
   await page.goto(baseUrl.href, { waitUntil: "networkidle" })
   await page.waitForSelector("text=Account health and token sets")
   await page.waitForSelector("text=Known models")
-  assertOpenGraphMetadata({
+  const openGraphMetadata = {
     title: await page.locator('meta[property="og:title"]').getAttribute("content"),
     description: await page.locator('meta[property="og:description"]').getAttribute("content"),
     type: await page.locator('meta[property="og:type"]').getAttribute("content"),
     image: await page.locator('meta[property="og:image"]').getAttribute("content"),
     twitterCard: await page.locator('meta[name="twitter:card"]').getAttribute("content"),
-  })
+  }
+  assertOpenGraphMetadata(openGraphMetadata)
+  await verifyPublicAsset(baseUrl, openGraphMetadata.image, "OpenGraph image")
   const screenshotPath = fileURLToPath(new URL(`live-dashboard-${viewport.name}.png`, SCREENSHOT_DIR))
   await page.screenshot({ path: screenshotPath, fullPage: true })
 
@@ -169,6 +175,19 @@ async function verifyDashboardPage(
     throw new Error(`${viewport.name} console errors: ${consoleMessages.join(" | ")}`)
   }
   console.log(`Render check ok: ${viewport.name} screenshot=${screenshotPath}`)
+}
+
+async function verifyPublicAsset(
+  baseUrl: URL,
+  assetPath: string | null,
+  label: string,
+): Promise<void> {
+  const response = await ky.get(new URL(assetPath ?? "", baseUrl), { throwHttpErrors: false })
+  assertPublicAssetResponse({
+    status: response.status,
+    contentType: response.headers.get("content-type"),
+    label,
+  })
 }
 
 try {

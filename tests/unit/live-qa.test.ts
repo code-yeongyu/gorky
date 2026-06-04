@@ -7,6 +7,7 @@ import {
   assertModelCatalogContains,
   assertOAuthUnknownModelResponse,
   assertOpenGraphMetadata,
+  assertPublicAssetResponse,
   ManifestResponseSchema,
   V1ModelsResponseSchema,
 } from "../../src/domain/live-qa"
@@ -146,5 +147,31 @@ describe("live QA contracts", () => {
 
     // When / Then
     expect(() => assertOpenGraphMetadata(metadata)).toThrow("Missing OpenGraph metadata: image")
+  })
+
+  it("Given a public SVG asset responds When checking the asset Then the QA check passes", () => {
+    // Given
+    const response = {
+      status: 200,
+      contentType: "image/svg+xml",
+      label: "OpenGraph image",
+    }
+
+    // When / Then
+    expect(() => assertPublicAssetResponse(response)).not.toThrow()
+  })
+
+  it("Given a public asset is missing When checking the asset Then the QA check fails", () => {
+    // Given
+    const response = {
+      status: 404,
+      contentType: "text/html",
+      label: "manifest icon",
+    }
+
+    // When / Then
+    expect(() => assertPublicAssetResponse(response)).toThrow(
+      "Expected manifest icon asset to return 200, got 404",
+    )
   })
 })
