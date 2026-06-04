@@ -35,6 +35,10 @@ export const RegisterAccountRequestSchema = z.object({
   modelIds: ModelIdSetSchema,
 })
 
+export const BulkRegisterAccountsRequestSchema = z.object({
+  accounts: z.array(RegisterAccountRequestSchema).min(1).max(25),
+})
+
 export const OAuthStartRequestSchema = z.object({
   redirectUri: z.url().refine(
     (value) => {

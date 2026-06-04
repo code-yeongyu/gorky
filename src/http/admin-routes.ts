@@ -2,13 +2,16 @@ import type { Hono } from "hono"
 import type { AppDependencies } from "../app"
 import { ensureFreshAccountToken } from "../domain/account-refresh"
 import { createApiKey } from "../domain/api-key"
-import type { AccountTokenRecord } from "../domain/types"
+import { createRegisteredAccount, saveRegisteredAccounts } from "./admin-account-registration"
+import { registerAdminBulkAccountRoutes } from "./admin-bulk-account-routes"
 import { logAdminEvent, redactAccount, redactApiKey } from "./admin-presenters"
 import { readJson, requireAdmin, toOpenAiError } from "./auth"
 import { validateConfiguredModels } from "./model-validation"
 import { CreateKeyRequestSchema, RegisterAccountRequestSchema } from "./schemas"
 
 export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
+  registerAdminBulkAccountRoutes(app, deps)
+
   app.get("/api/admin/keys", async (c) => {
     const auth = requireAdmin(c.req.raw.headers, deps.adminToken)
     if (auth) {
@@ -121,17 +124,15 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
       return c.json({ error: modelValidation.error }, 400)
     }
 
-    const account = {
-      id: `acct_${crypto.randomUUID()}`,
-      email: parsed.data.email,
-      accessToken: parsed.data.accessToken,
-      refreshToken: parsed.data.refreshToken,
-      expiresAt: parsed.data.expiresAt,
-      modelIds: parsed.data.modelIds,
-      status: "active",
-      lastUsedAt: null,
-    } satisfies AccountTokenRecord
-    await deps.store.saveAccount(account)
+    const account = createRegisteredAccount(parsed.data)
+    const saved = await saveRegisteredAccounts(deps, [account])
+    if (saved.kind === "failure") {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_register_failed", 502, {
+        errorCode: saved.error.code,
+      })
+      return c.json({ error: saved.error }, 502)
+    }
+
     logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_registered", 201, {
       accountId: account.id,
       modelIds: account.modelIds,
