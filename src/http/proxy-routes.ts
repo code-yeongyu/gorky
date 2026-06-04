@@ -3,6 +3,7 @@ import type { AppDependencies } from "../app"
 import { ensureFreshAccountToken } from "../domain/account-refresh"
 import { selectAccountForModel } from "../domain/account-selection"
 import { authenticateApiKey, getRequestId, readJson, toOpenAiError } from "./auth"
+import { validateConfiguredModels } from "./model-validation"
 import { ChatCompletionRequestSchema, ResponsesRequestSchema } from "./schemas"
 import { forwardWithAuthRetry, type PreparedProxyAccount } from "./upstream-forwarding"
 
@@ -168,13 +169,23 @@ async function prepareAccount(
   | {
       readonly kind: "failure"
       readonly error: { readonly code: string; readonly type: string; readonly message: string }
-      readonly status: 401 | 403 | 429 | 502 | 503
+      readonly status: 400 | 401 | 403 | 429 | 502 | 503
       readonly keyPrefix?: string
     }
 > {
   const auth = await authenticateApiKey(deps.store, headers, model)
   if (auth.kind === "failure") {
     return { kind: "failure", error: auth.error, status: auth.status } as const
+  }
+
+  const configured = validateConfiguredModels(deps, [model])
+  if (configured.kind === "failure") {
+    return {
+      kind: "failure",
+      error: configured.error,
+      status: 400,
+      keyPrefix: auth.record.keyPrefix,
+    } as const
   }
 
   const selected = selectAccountForModel(await deps.store.listAccounts(), model)

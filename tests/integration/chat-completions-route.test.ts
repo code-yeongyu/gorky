@@ -168,6 +168,7 @@ describe("chat completions route", () => {
       store,
       adminToken: "dev-admin-token",
       now: () => 1_780_000_000_000,
+      models: ["grok-build"],
       logger: (event) => {
         logs.push(event)
       },

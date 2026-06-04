@@ -9,7 +9,7 @@ describe("upstream failure route handling", () => {
     // Given
     const apiKey = await createApiKey({
       name: "qa-key",
-      allowedModels: ["grok-build"],
+      allowedModels: ["grok-composer-2.5-fast"],
       now: 1_780_000_000_000,
       secretSeed: "upstream-throw",
     })
@@ -19,7 +19,7 @@ describe("upstream failure route handling", () => {
       accessToken: "redacted-access-token",
       refreshToken: "redacted-refresh-token",
       expiresAt: 1_780_001_000_000,
-      modelIds: ["grok-build"],
+      modelIds: ["grok-composer-2.5-fast"],
       status: "active",
       lastUsedAt: null,
     }
@@ -50,7 +50,7 @@ describe("upstream failure route handling", () => {
         "x-api-key": apiKey.plaintextKey,
       },
       body: JSON.stringify({
-        model: "grok-build",
+        model: "grok-composer-2.5-fast",
         messages: [{ role: "user", content: "ping" }],
       }),
     })
@@ -76,7 +76,7 @@ describe("upstream failure route handling", () => {
     // Given
     const apiKey = await createApiKey({
       name: "qa-key",
-      allowedModels: ["grok-build"],
+      allowedModels: ["grok-composer-2.5-fast"],
       now: 1_780_000_000_000,
       secretSeed: "upstream-auth-reject",
     })
@@ -86,7 +86,7 @@ describe("upstream failure route handling", () => {
       accessToken: "stale-access-token",
       refreshToken: "refresh-sentinel",
       expiresAt: 1_780_001_000_000,
-      modelIds: ["grok-build"],
+      modelIds: ["grok-composer-2.5-fast"],
       status: "active",
       lastUsedAt: null,
     }
@@ -116,7 +116,7 @@ describe("upstream failure route handling", () => {
         "x-api-key": apiKey.plaintextKey,
       },
       body: JSON.stringify({
-        model: "grok-build",
+        model: "grok-composer-2.5-fast",
         messages: [{ role: "user", content: "ping" }],
       }),
     })

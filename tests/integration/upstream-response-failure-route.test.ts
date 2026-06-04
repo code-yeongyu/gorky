@@ -9,7 +9,7 @@ describe("upstream response failure route handling", () => {
     // Given
     const apiKey = await createApiKey({
       name: "qa-key",
-      allowedModels: ["grok-build"],
+      allowedModels: ["grok-composer-2.5-fast"],
       now: 1_780_000_000_000,
       secretSeed: "upstream-server-error",
     })
@@ -63,7 +63,7 @@ describe("upstream response failure route handling", () => {
     // Given
     const apiKey = await createApiKey({
       name: "qa-key",
-      allowedModels: ["grok-build"],
+      allowedModels: ["grok-composer-2.5-fast"],
       now: 1_780_000_000_000,
       secretSeed: "upstream-rate-limit",
     })
@@ -117,7 +117,7 @@ describe("upstream response failure route handling", () => {
     // Given
     const apiKey = await createApiKey({
       name: "qa-key",
-      allowedModels: ["grok-build"],
+      allowedModels: ["grok-composer-2.5-fast"],
       now: 1_780_000_000_000,
       secretSeed: "upstream-redirect",
     })
@@ -173,7 +173,7 @@ function createAccount(accessToken: string, refreshToken: string): AccountTokenR
     accessToken,
     refreshToken,
     expiresAt: 1_780_001_000_000,
-    modelIds: ["grok-build"],
+    modelIds: ["grok-composer-2.5-fast"],
     status: "active",
     lastUsedAt: null,
   }
@@ -187,7 +187,7 @@ async function requestChat(app: ReturnType<typeof createApp>, apiKey: string): P
       "x-api-key": apiKey,
     },
     body: JSON.stringify({
-      model: "grok-build",
+      model: "grok-composer-2.5-fast",
       messages: [{ role: "user", content: "ping" }],
     }),
   })
