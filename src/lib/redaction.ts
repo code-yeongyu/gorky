@@ -10,6 +10,11 @@ const SENSITIVE_KEYS = new Set([
   "accessToken",
 ])
 
+const SECRET_STRING_PATTERNS = [
+  /\bBearer\s+[A-Za-z0-9._~+/=-]+/g,
+  /\bgorky_(?![0-9a-f]{6}\b)[A-Za-z0-9._-]+/g,
+] as const
+
 export function redactSensitiveData(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map((item) => redactSensitiveData(item))
@@ -25,5 +30,16 @@ export function redactSensitiveData(value: unknown): unknown {
     return Object.fromEntries(entries)
   }
 
+  if (typeof value === "string") {
+    return redactSensitiveString(value)
+  }
+
   return value
+}
+
+function redactSensitiveString(value: string): string {
+  return SECRET_STRING_PATTERNS.reduce(
+    (redacted, pattern) => redacted.replace(pattern, "[REDACTED]"),
+    value,
+  )
 }
