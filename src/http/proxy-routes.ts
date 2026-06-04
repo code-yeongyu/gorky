@@ -1,13 +1,11 @@
 import type { Hono } from "hono"
 import type { AppDependencies } from "../app"
-import { ensureFreshAccountToken } from "../domain/account-refresh"
-import { selectAccountForModel } from "../domain/account-selection"
-import { authenticateApiKey, readJson, toOpenAiError } from "./auth"
-import { validateConfiguredModels } from "./model-validation"
+import { readJson, toOpenAiError } from "./auth"
+import { prepareAccount } from "./proxy-account"
 import { durationSince, logProxyFailure, logProxySuccess } from "./proxy-logging"
 import { recordProxyUsage } from "./proxy-usage"
 import { ChatCompletionRequestSchema, ResponsesRequestSchema } from "./schemas"
-import { forwardWithAuthRetry, type PreparedProxyAccount } from "./upstream-forwarding"
+import { forwardWithAuthRetry } from "./upstream-forwarding"
 
 export type ProxyRouteConfig = {
   readonly grokClientVersion: string
@@ -192,66 +190,4 @@ export function registerProxyRoutes(
     })
     return upstream.response
   })
-}
-
-async function prepareAccount(
-  deps: AppDependencies,
-  headers: Headers,
-  model: string,
-): Promise<
-  | PreparedProxyAccount
-  | {
-      readonly kind: "failure"
-      readonly error: { readonly code: string; readonly type: string; readonly message: string }
-      readonly status: 400 | 401 | 403 | 429 | 502 | 503
-      readonly keyPrefix?: string
-    }
-> {
-  const auth = await authenticateApiKey(deps.store, headers, model)
-  if (auth.kind === "failure") {
-    return { kind: "failure", error: auth.error, status: auth.status } as const
-  }
-
-  const configured = validateConfiguredModels(deps, [model])
-  if (configured.kind === "failure") {
-    return {
-      kind: "failure",
-      error: configured.error,
-      status: 400,
-      keyPrefix: auth.record.keyPrefix,
-    } as const
-  }
-
-  const selected = selectAccountForModel(await deps.store.listAccounts(), model)
-  if (!selected) {
-    return {
-      kind: "failure",
-      error: toOpenAiError("invalid_request_error", "model_unavailable", "No account can use model")
-        .error,
-      status: 503,
-      keyPrefix: auth.record.keyPrefix,
-    } as const
-  }
-
-  const fresh = await ensureFreshAccountToken({
-    account: selected,
-    client: { refresh: deps.refreshClient },
-    now: deps.now(),
-    store: deps.store,
-  })
-  if (fresh.kind === "failure") {
-    return {
-      kind: "failure",
-      error: fresh.error,
-      status: 502,
-      keyPrefix: auth.record.keyPrefix,
-    } as const
-  }
-
-  return {
-    kind: "success",
-    account: fresh.account,
-    keyHash: auth.record.keyHash,
-    keyPrefix: auth.record.keyPrefix,
-  } as const
 }

@@ -4,7 +4,7 @@ import type { GorkyStore } from "../store"
 
 export type AuthenticationResult =
   | { readonly kind: "success"; readonly record: ApiKeyRecord }
-  | { readonly kind: "failure"; readonly error: ApiError; readonly status: 401 | 403 | 429 }
+  | { readonly kind: "failure"; readonly error: ApiError; readonly status: 401 | 403 | 429 | 502 }
 
 export async function authenticateApiKey(
   store: GorkyStore,
@@ -25,8 +25,11 @@ export async function authenticateApiKey(
   }
 
   const keyHash = await hashApiKey(plaintextKey)
-  const record = await store.findApiKeyByHash(keyHash)
-  if (!record) {
+  const record = await findApiKeyByHash(store, keyHash)
+  if (record.kind === "failure") {
+    return record
+  }
+  if (!record.record) {
     return {
       kind: "failure",
       status: 401,
@@ -38,7 +41,7 @@ export async function authenticateApiKey(
     }
   }
 
-  const verified = await verifyApiKey({ plaintextKey, record, requestedModel })
+  const verified = await verifyApiKey({ plaintextKey, record: record.record, requestedModel })
   if (verified.kind === "failure") {
     return {
       kind: "failure",
@@ -47,7 +50,32 @@ export async function authenticateApiKey(
     }
   }
 
-  return { kind: "success", record }
+  return { kind: "success", record: record.record }
+}
+
+async function findApiKeyByHash(
+  store: GorkyStore,
+  keyHash: string,
+): Promise<
+  | { readonly kind: "success"; readonly record: ApiKeyRecord | null }
+  | { readonly kind: "failure"; readonly error: ApiError; readonly status: 502 }
+> {
+  try {
+    return { kind: "success", record: await store.findApiKeyByHash(keyHash) }
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        kind: "failure",
+        status: 502,
+        error: {
+          type: "gorky_storage_error",
+          code: "api_key_lookup_failed",
+          message: "API key lookup failed",
+        },
+      }
+    }
+    throw error
+  }
 }
 
 export function requireAdmin(headers: Headers, adminToken: string): Response | null {
