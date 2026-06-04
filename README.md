@@ -16,7 +16,7 @@ The first supported upstreams are the Grok CLI chat proxy and the public xAI API
 - OpenAI-compatible `/v1/models` discovery for Grok CLI custom endpoints
 - Model allow-lists for custom API keys
 - Admin key revocation for compromised or retired token sets
-- Admin routes for account and key registration
+- Admin routes for single and batch account registration plus key registration
 - Structured logs with token/header redaction
 - Vite React dashboard with PWA manifest and OpenGraph metadata
 
@@ -24,6 +24,7 @@ The first supported upstreams are the Grok CLI chat proxy and the public xAI API
 
 ```http
 POST /api/admin/accounts
+POST /api/admin/accounts/bulk
 POST /api/admin/accounts/{id}/disable
 POST /api/admin/accounts/{id}/enable
 POST /api/admin/accounts/{id}/refresh
@@ -102,6 +103,9 @@ wrangler secret put TOKEN_ENCRYPTION_SECRET
 `LOGIN_STATE` is used for short-lived OAuth PKCE state during account
 registration. The callback stores only encrypted token material and returns a
 redacted account record.
+
+Manual batch registration accepts an array of account token sets, stores them
+through a single D1 batch operation, and returns only redacted account records.
 
 ## Verification
 

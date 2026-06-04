@@ -49,4 +49,14 @@ describe("package scripts", () => {
     expect(readme).not.toContain("GORKY_GROK_BIN=/Users/yeongyu/.grok/bin/grok pnpm models:sync")
     expect(readme).not.toContain("GORKY_GROK_BIN=/Users/yeongyu/.grok/bin/grok pnpm qa:grok-models")
   })
+
+  it("Given bulk account registration exists When inspecting docs and live QA Then the admin route is covered", async () => {
+    // Given
+    const readme = await readFile("README.md", "utf8")
+    const liveQaScript = await readFile("scripts/qa-live.ts", "utf8")
+
+    // When / Then
+    expect(readme).toContain("POST /api/admin/accounts/bulk")
+    expect(liveQaScript).toContain('path: "/api/admin/accounts/bulk"')
+  })
 })

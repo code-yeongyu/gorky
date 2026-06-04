@@ -42,6 +42,7 @@ const VIEWPORTS = [
 const ADMIN_PROTECTED_REQUESTS = [
   { label: "list accounts", method: "GET", path: "/api/admin/accounts" },
   { label: "manual account registration", method: "POST", path: "/api/admin/accounts" },
+  { label: "bulk account registration", method: "POST", path: "/api/admin/accounts/bulk" },
   { label: "disable account", method: "POST", path: "/api/admin/accounts/acct_live_qa/disable" },
   { label: "enable account", method: "POST", path: "/api/admin/accounts/acct_live_qa/enable" },
   { label: "refresh account", method: "POST", path: "/api/admin/accounts/acct_live_qa/refresh" },
