@@ -45,6 +45,14 @@ export const ManifestResponseSchema = z.object({
   icons: z.array(z.object({ src: z.string().min(1) })).min(1),
 })
 
+export type OpenGraphMetadata = {
+  readonly title: string | null
+  readonly description: string | null
+  readonly type: string | null
+  readonly image: string | null
+  readonly twitterCard: string | null
+}
+
 export function assertMatchingModelCatalog(
   apiModels: z.infer<typeof ApiModelsResponseSchema>,
   v1Models: z.infer<typeof V1ModelsResponseSchema>,
@@ -68,6 +76,20 @@ export function assertOAuthUnknownModelResponse(status: number, body: unknown): 
     throw new Error(`Expected OAuth unknown-model live check to return 400, got ${status}`)
   }
   OAuthUnknownModelResponseSchema.parse(body)
+}
+
+export function assertOpenGraphMetadata(metadata: OpenGraphMetadata): void {
+  const requiredEntries = [
+    ["title", metadata.title],
+    ["description", metadata.description],
+    ["type", metadata.type],
+    ["image", metadata.image],
+    ["twitterCard", metadata.twitterCard],
+  ] as const
+  const missing = requiredEntries.filter((entry) => !entry[1]?.trim()).map((entry) => entry[0])
+  if (missing.length) {
+    throw new Error(`Missing OpenGraph metadata: ${missing.join(", ")}`)
+  }
 }
 
 export function assertModelCatalogContains(

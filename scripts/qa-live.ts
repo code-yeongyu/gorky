@@ -10,6 +10,7 @@ import {
   V1ModelsResponseSchema,
   assertAdminProtectionResponse,
   assertMatchingModelCatalog,
+  assertOpenGraphMetadata,
   assertOAuthUnknownModelResponse,
 } from "../src/domain/live-qa.ts"
 
@@ -133,6 +134,13 @@ async function verifyDashboardPage(
   await page.goto(baseUrl.href, { waitUntil: "networkidle" })
   await page.waitForSelector("text=Account health and token sets")
   await page.waitForSelector("text=Known models")
+  assertOpenGraphMetadata({
+    title: await page.locator('meta[property="og:title"]').getAttribute("content"),
+    description: await page.locator('meta[property="og:description"]').getAttribute("content"),
+    type: await page.locator('meta[property="og:type"]').getAttribute("content"),
+    image: await page.locator('meta[property="og:image"]').getAttribute("content"),
+    twitterCard: await page.locator('meta[name="twitter:card"]').getAttribute("content"),
+  })
   const screenshotPath = fileURLToPath(new URL(`live-dashboard-${viewport.name}.png`, SCREENSHOT_DIR))
   await page.screenshot({ path: screenshotPath, fullPage: true })
 

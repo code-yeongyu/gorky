@@ -6,6 +6,7 @@ import {
   assertMatchingModelCatalog,
   assertModelCatalogContains,
   assertOAuthUnknownModelResponse,
+  assertOpenGraphMetadata,
   ManifestResponseSchema,
   V1ModelsResponseSchema,
 } from "../../src/domain/live-qa"
@@ -117,5 +118,33 @@ describe("live QA contracts", () => {
     expect(() => assertOAuthUnknownModelResponse(201, body)).toThrow(
       "Expected OAuth unknown-model live check to return 400, got 201",
     )
+  })
+
+  it("Given OpenGraph tags are complete When checking metadata Then the QA check passes", () => {
+    // Given
+    const metadata = {
+      title: "Gorky",
+      description: "A secure Grok OAuth account console and OpenAI-compatible API proxy.",
+      type: "website",
+      image: "/og.svg",
+      twitterCard: "summary_large_image",
+    }
+
+    // When / Then
+    expect(() => assertOpenGraphMetadata(metadata)).not.toThrow()
+  })
+
+  it("Given OpenGraph image is missing When checking metadata Then the QA check fails", () => {
+    // Given
+    const metadata = {
+      title: "Gorky",
+      description: "A secure Grok OAuth account console and OpenAI-compatible API proxy.",
+      type: "website",
+      image: null,
+      twitterCard: "summary_large_image",
+    }
+
+    // When / Then
+    expect(() => assertOpenGraphMetadata(metadata)).toThrow("Missing OpenGraph metadata: image")
   })
 })
