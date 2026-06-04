@@ -13,6 +13,7 @@ import {
 } from "./api"
 import {
   AccountList,
+  AdminTokenForm,
   DashboardMetrics,
   KeyForm,
   KeyList,
@@ -192,20 +193,12 @@ export function App(): React.ReactElement {
             <p className="eyebrow">Grok routing console</p>
             <h1 id="page-title">Account health and token sets</h1>
           </div>
-          <form className="token-form" onSubmit={saveAdminToken}>
-            <label htmlFor="admin-token">Admin token</label>
-            <input
-              id="admin-token"
-              name="adminToken"
-              type="password"
-              value={adminToken}
-              onChange={(event) => setAdminToken(event.currentTarget.value)}
-              autoComplete="off"
-            />
-            <button type="submit" disabled={!adminToken || isLoading}>
-              Sync
-            </button>
-          </form>
+          <AdminTokenForm
+            adminToken={adminToken}
+            isBusy={isLoading}
+            onChange={setAdminToken}
+            onSubmit={saveAdminToken}
+          />
         </header>
 
         <p className="notice" data-kind={notice.kind}>

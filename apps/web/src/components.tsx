@@ -24,6 +24,30 @@ export function DashboardMetrics(props: {
   )
 }
 
+export function AdminTokenForm(props: {
+  readonly adminToken: string
+  readonly isBusy: boolean
+  readonly onChange: (value: string) => void
+  readonly onSubmit: (event: FormSubmitEvent) => void
+}): React.ReactElement {
+  return (
+    <form className="token-form" onSubmit={props.onSubmit}>
+      <label htmlFor="admin-token">Admin token</label>
+      <input
+        id="admin-token"
+        name="adminToken"
+        type="password"
+        value={props.adminToken}
+        onChange={(event) => props.onChange(event.currentTarget.value)}
+        autoComplete="off"
+      />
+      <button type="submit" disabled={!props.adminToken || props.isBusy}>
+        Sync
+      </button>
+    </form>
+  )
+}
+
 export function AccountList(props: {
   readonly accounts: readonly AccountRow[]
   readonly isBusy: boolean

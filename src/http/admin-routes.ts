@@ -1,8 +1,9 @@
 import type { Hono } from "hono"
 import type { AppDependencies } from "../app"
 import { createApiKey } from "../domain/api-key"
-import type { AccountTokenRecord, ApiKeyRecord } from "../domain/types"
-import { getRequestId, readJson, requireAdmin, toOpenAiError } from "./auth"
+import type { AccountTokenRecord } from "../domain/types"
+import { logAdminEvent, redactAccount, redactApiKey } from "./admin-presenters"
+import { readJson, requireAdmin, toOpenAiError } from "./auth"
 import { CreateKeyRequestSchema, RegisterAccountRequestSchema } from "./schemas"
 
 export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
@@ -200,48 +201,5 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
       status: account.status,
     })
     return c.json({ account: redactAccount(account) })
-  })
-}
-
-function redactAccount(account: AccountTokenRecord) {
-  return {
-    id: account.id,
-    email: account.email,
-    principalType: "User",
-    expiresAt: account.expiresAt,
-    modelIds: account.modelIds,
-    status: account.status,
-    lastUsedAt: account.lastUsedAt,
-  }
-}
-
-function redactApiKey(key: ApiKeyRecord) {
-  return {
-    id: key.id,
-    keyPrefix: key.keyPrefix,
-    name: key.name,
-    allowedModels: key.allowedModels,
-    createdAt: key.createdAt,
-    lastUsedAt: key.lastUsedAt,
-    revokedAt: key.revokedAt,
-    deactivatedAt: key.deactivatedAt,
-  }
-}
-
-function logAdminEvent(
-  deps: AppDependencies,
-  request: Request,
-  path: string,
-  event: string,
-  status: number,
-  metadata?: unknown,
-): void {
-  deps.logger?.({
-    event,
-    requestId: getRequestId(request.headers),
-    path,
-    method: request.method,
-    status,
-    metadata,
   })
 }
