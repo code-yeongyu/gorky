@@ -4,6 +4,7 @@ import { ensureFreshAccountToken } from "../domain/account-refresh"
 import { createApiKey } from "../domain/api-key"
 import { createRegisteredAccount, saveRegisteredAccounts } from "./admin-account-registration"
 import { registerAdminBulkAccountRoutes } from "./admin-bulk-account-routes"
+import { saveRegisteredApiKey } from "./admin-key-registration"
 import { logAdminEvent, redactAccount, redactApiKey } from "./admin-presenters"
 import { readJson, requireAdmin, toOpenAiError } from "./auth"
 import { validateConfiguredModels } from "./model-validation"
@@ -57,7 +58,15 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
       allowedModels: parsed.data.allowedModels,
       now: deps.now(),
     })
-    await deps.store.saveApiKey(created.record)
+    const saved = await saveRegisteredApiKey(deps, created.record)
+    if (saved.kind === "failure") {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_key_create_failed", 502, {
+        errorCode: saved.error.code,
+        keyPrefix: created.record.keyPrefix,
+      })
+      return c.json({ error: saved.error }, 502)
+    }
+
     logAdminEvent(deps, c.req.raw, c.req.path, "admin_key_created", 201, {
       keyPrefix: created.record.keyPrefix,
       allowedModels: created.record.allowedModels,
