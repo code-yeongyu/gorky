@@ -1,4 +1,5 @@
-input {
+input,
+textarea {
   background: var(--surface-elevated);
   border: 1px solid var(--border-default);
   border-radius: 4px;
@@ -6,6 +7,17 @@ input {
   min-width: 0;
   padding: 0 12px;
   width: 100%;
+}
+
+textarea {
+  font:
+    13px / 1.5 "SF Mono",
+    "Geist Mono",
+    ui-monospace,
+    monospace;
+  min-height: 132px;
+  padding: 10px 12px;
+  resize: vertical;
 }
 
 .token-form {

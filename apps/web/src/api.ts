@@ -16,6 +16,14 @@ export type CreateKeyResponse = {
   readonly allowedModels: readonly string[]
 }
 
+export type ManualAccountInput = {
+  readonly email: string
+  readonly accessToken: string
+  readonly refreshToken: string
+  readonly expiresAt: number
+  readonly modelIds: readonly string[]
+}
+
 export type ApiKeyRow = {
   readonly id: string
   readonly keyPrefix: string
@@ -76,6 +84,21 @@ export async function refreshAccount(adminToken: string, accountId: string): Pro
     },
   )
   return body.account
+}
+
+export async function registerAccounts(
+  adminToken: string,
+  accounts: readonly ManualAccountInput[],
+): Promise<readonly AccountRow[]> {
+  const body = await requestJson<{ readonly accounts: readonly AccountRow[] }>(
+    "/api/admin/accounts/bulk",
+    {
+      method: "POST",
+      adminToken,
+      body: { accounts },
+    },
+  )
+  return body.accounts
 }
 
 export async function fetchKeys(adminToken: string): Promise<readonly ApiKeyRow[]> {

@@ -19,10 +19,9 @@ import {
   GeneratedKeyOutput,
   KeyForm,
   KeyList,
-  ManualAccountForm,
-  OAuthForm,
 } from "./components"
 import { type FormSubmitEvent, messageFromError, stringField } from "./form-utils"
+import { RegistrationPanel } from "./registration-panel"
 
 type Notice = { readonly kind: "success" | "error" | "info"; readonly message: string }
 
@@ -71,30 +70,6 @@ export function App(): React.ReactElement {
     event.preventDefault()
     sessionStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, adminToken)
     await refreshDashboard(adminToken)
-  }
-
-  async function startOAuth(event: FormSubmitEvent): Promise<void> {
-    event.preventDefault()
-    const form = new FormData(event.currentTarget)
-    const redirectUri =
-      stringField(form, "redirectUri") || `${globalThis.location.origin}/api/oauth/callback`
-    const selectedModels = form.getAll("modelIds").map(String)
-    try {
-      const response = await requestJson<{ readonly authorizationUrl: string }>(
-        "/api/admin/oauth/start",
-        {
-          method: "POST",
-          adminToken,
-          body: {
-            redirectUri,
-            modelIds: selectedModels.length ? selectedModels : [modelOptions[0] ?? "grok-build"],
-          },
-        },
-      )
-      globalThis.location.assign(response.authorizationUrl)
-    } catch (error) {
-      setNotice({ kind: "error", message: messageFromError(error) })
-    }
   }
 
   async function createKey(event: FormSubmitEvent): Promise<void> {
@@ -158,30 +133,6 @@ export function App(): React.ReactElement {
     }
   }
 
-  async function registerManualAccount(event: FormSubmitEvent): Promise<void> {
-    event.preventDefault()
-    const formElement = event.currentTarget
-    const form = new FormData(formElement)
-    try {
-      await requestJson("/api/admin/accounts", {
-        method: "POST",
-        adminToken,
-        body: {
-          email: stringField(form, "email"),
-          accessToken: stringField(form, "accessToken"),
-          refreshToken: stringField(form, "refreshToken"),
-          expiresAt: Number(stringField(form, "expiresAt")),
-          modelIds: form.getAll("modelIds").map(String),
-        },
-      })
-      formElement.reset()
-      await refreshDashboard()
-      setNotice({ kind: "success", message: "Account registered. Token fields were cleared." })
-    } catch (error) {
-      setNotice({ kind: "error", message: messageFromError(error) })
-    }
-  }
-
   return (
     <main className="shell">
       <aside className="sidebar" aria-label="Gorky navigation">
@@ -239,14 +190,12 @@ export function App(): React.ReactElement {
             />
           </section>
 
-          <section className="panel" id="register" aria-label="Register accounts">
-            <div className="panel-title">
-              <h2>Register account</h2>
-              <p>No token material is shown after submit.</p>
-            </div>
-            <OAuthForm models={modelOptions} onSubmit={startOAuth} />
-            <ManualAccountForm models={modelOptions} onSubmit={registerManualAccount} />
-          </section>
+          <RegistrationPanel
+            adminToken={adminToken}
+            models={modelOptions}
+            onNotice={setNotice}
+            onRefreshDashboard={() => refreshDashboard()}
+          />
 
           <section className="panel" id="keys" aria-label="API keys">
             <div className="panel-title">
