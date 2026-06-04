@@ -4,11 +4,11 @@ import { chromium, type Page } from "@playwright/test"
 import ky from "ky"
 import type { z } from "zod"
 import {
-  AdminProtectionResponseSchema,
   ApiModelsResponseSchema,
   HealthResponseSchema,
   ManifestResponseSchema,
   V1ModelsResponseSchema,
+  assertAdminProtectionResponse,
   assertMatchingModelCatalog,
 } from "../src/domain/live-qa.ts"
 
@@ -21,10 +21,26 @@ type ViewportScenario = {
   readonly height: number
 }
 
+type ProtectedAdminRequest = {
+  readonly label: string
+  readonly method: "GET" | "POST"
+  readonly path: `/${string}`
+}
+
 const VIEWPORTS = [
   { name: "desktop", width: 1440, height: 1000 },
   { name: "mobile", width: 390, height: 1200 },
 ] as const satisfies readonly ViewportScenario[]
+
+const ADMIN_PROTECTED_REQUESTS = [
+  { label: "list accounts", method: "GET", path: "/api/admin/accounts" },
+  { label: "manual account registration", method: "POST", path: "/api/admin/accounts" },
+  { label: "disable account", method: "POST", path: "/api/admin/accounts/acct_live_qa/disable" },
+  { label: "start OAuth registration", method: "POST", path: "/api/admin/oauth/start" },
+  { label: "list key sets", method: "GET", path: "/api/admin/keys" },
+  { label: "create key set", method: "POST", path: "/api/admin/keys" },
+  { label: "revoke key set", method: "POST", path: "/api/admin/keys/key_live_qa/revoke" },
+] as const satisfies readonly ProtectedAdminRequest[]
 
 async function main(): Promise<void> {
   const baseUrl = new URL(process.env["GORKY_LIVE_BASE_URL"] ?? DEFAULT_BASE_URL)
@@ -39,17 +55,17 @@ async function runHttpChecks(baseUrl: URL): Promise<void> {
   const v1Models = await getJson(new URL("/v1/models", baseUrl), V1ModelsResponseSchema)
   assertMatchingModelCatalog(apiModels, v1Models)
 
-  const adminResponse = await ky.post(new URL("/api/admin/oauth/start", baseUrl), {
-    throwHttpErrors: false,
-  })
-  if (adminResponse.status !== 401) {
-    throw new Error(`Expected admin protection to return 401, got ${adminResponse.status}`)
+  for (const request of ADMIN_PROTECTED_REQUESTS) {
+    const response = await ky(new URL(request.path, baseUrl), {
+      method: request.method,
+      throwHttpErrors: false,
+    })
+    assertAdminProtectionResponse(response.status, await response.json(), request.label)
   }
-  AdminProtectionResponseSchema.parse(await adminResponse.json())
 
   const manifest = await getJson(new URL("/manifest.webmanifest", baseUrl), ManifestResponseSchema)
   console.log(
-    `HTTP checks ok: service=${health.service} models=${apiModels.models.length} manifest=${manifest.display}`,
+    `HTTP checks ok: service=${health.service} models=${apiModels.models.length} admin=${ADMIN_PROTECTED_REQUESTS.length} manifest=${manifest.display}`,
   )
 }
 

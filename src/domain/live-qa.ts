@@ -48,6 +48,13 @@ export function assertMatchingModelCatalog(
   }
 }
 
+export function assertAdminProtectionResponse(status: number, body: unknown, label: string): void {
+  if (status !== 401) {
+    throw new Error(`Expected ${label} admin protection to return 401, got ${status}`)
+  }
+  AdminProtectionResponseSchema.parse(body)
+}
+
 export function assertModelCatalogContains(
   expectedModelIds: readonly string[],
   actualModelIds: readonly string[],

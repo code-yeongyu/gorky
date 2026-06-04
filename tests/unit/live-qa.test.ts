@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import {
+  AdminProtectionResponseSchema,
   ApiModelsResponseSchema,
+  assertAdminProtectionResponse,
   assertMatchingModelCatalog,
   assertModelCatalogContains,
   ManifestResponseSchema,
@@ -66,5 +68,29 @@ describe("live QA contracts", () => {
     // Then
     expect(parsed.display).toBe("standalone")
     expect(parsed.icons).toHaveLength(1)
+  })
+
+  it("Given an unauthenticated admin response When status and body match Then the QA check passes", () => {
+    // Given
+    const body = AdminProtectionResponseSchema.parse({
+      error: {
+        type: "authentication_error",
+        code: "invalid_admin_token",
+        message: "Invalid admin token",
+      },
+    })
+
+    // When / Then
+    expect(() => assertAdminProtectionResponse(401, body, "list accounts")).not.toThrow()
+  })
+
+  it("Given an admin route returns success When checking protection Then the QA check fails", () => {
+    // Given
+    const body = { ok: true }
+
+    // When / Then
+    expect(() => assertAdminProtectionResponse(200, body, "list accounts")).toThrow(
+      "Expected list accounts admin protection to return 401, got 200",
+    )
   })
 })
