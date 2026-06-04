@@ -104,8 +104,9 @@ wrangler secret put TOKEN_ENCRYPTION_SECRET
 registration. The callback stores only encrypted token material and returns a
 redacted account record.
 
-Manual batch registration accepts an array of account token sets, stores them
-through a single D1 batch operation, and returns only redacted account records.
+Manual batch registration accepts an array or `{ "accounts": [...] }` object of
+account token sets, stores them through a single D1 batch operation, and returns
+only redacted account records.
 
 ## Verification
 

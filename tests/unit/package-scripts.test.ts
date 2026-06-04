@@ -63,4 +63,12 @@ describe("package scripts", () => {
     expect(adminChecks).toContain('new URL("/api/admin/accounts/bulk", baseUrl)')
     expect(adminChecks).toContain("grok-live-qa-bulk-missing")
   })
+
+  it("Given dashboard batch import accepts API payloads When reading README Then both JSON shapes are documented", async () => {
+    // Given
+    const readme = await readFile("README.md", "utf8")
+
+    // When / Then
+    expect(readme).toContain('array or `{ "accounts": [...] }` object')
+  })
 })
