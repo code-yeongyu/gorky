@@ -10,11 +10,16 @@ const SECURITY_HEADERS = {
   "x-frame-options": "DENY",
 } as const
 
+const NO_STORE_PATH_PREFIXES = ["/api/", "/v1/"] as const
+
 export function registerSecurityHeaders(app: Hono): void {
   app.use("*", async (c, next) => {
     await next()
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
       c.header(name, value)
+    }
+    if (NO_STORE_PATH_PREFIXES.some((pathPrefix) => c.req.path.startsWith(pathPrefix))) {
+      c.header("cache-control", "no-store")
     }
   })
 }

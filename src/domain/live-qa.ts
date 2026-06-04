@@ -176,6 +176,12 @@ export function assertSecurityHeaders(headers: Headers, label: string): void {
   }
 }
 
+export function assertNoStoreHeader(headers: Headers, label: string): void {
+  if (headers.get("cache-control") !== "no-store") {
+    throw new Error(`Expected ${label} cache-control to be no-store`)
+  }
+}
+
 export function assertModelCatalogContains(
   expectedModelIds: readonly string[],
   actualModelIds: readonly string[],

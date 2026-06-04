@@ -30,4 +30,26 @@ describe("security headers", () => {
     expect(response.headers.get("x-frame-options")).toBe("DENY")
     expect(response.headers.get("permissions-policy") ?? "").toContain("camera=()")
   })
+
+  it("Given an API response When admin auth fails Then caching is disabled", async () => {
+    // Given
+    const app = createApp({
+      store: createMemoryStore({ accounts: [], apiKeys: [] }),
+      adminToken: "dev-admin-token",
+      now: () => 1_780_000_000_000,
+      upstream: async () => Response.json({ ok: true }),
+      refreshClient: async (): Promise<TokenRefreshResult> => ({
+        kind: "success",
+        accessToken: "unused",
+        refreshToken: null,
+        expiresInSeconds: 21_600,
+      }),
+    })
+
+    // When
+    const response = await app.request("/api/admin/accounts")
+
+    // Then
+    expect(response.headers.get("cache-control")).toBe("no-store")
+  })
 })

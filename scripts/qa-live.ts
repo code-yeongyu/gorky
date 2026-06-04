@@ -10,6 +10,7 @@ import {
   V1ModelsResponseSchema,
   assertAdminProtectionResponse,
   assertMatchingModelCatalog,
+  assertNoStoreHeader,
   assertOpenGraphMetadata,
   assertOAuthUnknownModelResponse,
   assertPublicAssetResponse,
@@ -71,6 +72,7 @@ async function runHttpChecks(baseUrl: URL): Promise<void> {
       throwHttpErrors: false,
     })
     assertSecurityHeaders(response.headers, request.label)
+    assertNoStoreHeader(response.headers, request.label)
     assertAdminProtectionResponse(response.status, await response.json(), request.label)
   }
 
@@ -116,6 +118,9 @@ async function getJson<TSchema extends z.ZodType>(
 ): Promise<z.infer<TSchema>> {
   const response = await ky.get(url)
   assertSecurityHeaders(response.headers, label)
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/v1/")) {
+    assertNoStoreHeader(response.headers, label)
+  }
   const body = await response.json()
   return schema.parse(body)
 }
