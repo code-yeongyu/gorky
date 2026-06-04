@@ -25,6 +25,32 @@ describe("web api client", () => {
     await expect(promise).rejects.toThrow("Request failed.")
   })
 
+  it("Given a structured api error When requesting json Then the code and message are surfaced", async () => {
+    // Given
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json(
+        {
+          error: {
+            type: "api_error",
+            code: "oauth_state_lookup_failed",
+            message: "OAuth state lookup failed.",
+            debug: "SENSITIVE_DEBUG_SENTINEL",
+          },
+        },
+        { status: 502 },
+      ),
+    )
+
+    // When
+    const promise = requestJson("/api/oauth/callback", {
+      method: "GET",
+    })
+
+    // Then
+    await expect(promise).rejects.toThrow("oauth_state_lookup_failed: OAuth state lookup failed.")
+    await expect(promise).rejects.not.toThrow("SENSITIVE_DEBUG_SENTINEL")
+  })
+
   it("Given multiple manual accounts When registering accounts Then the bulk route is called", async () => {
     // Given
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(

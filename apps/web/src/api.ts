@@ -172,6 +172,9 @@ export function errorMessage(value: unknown): string {
       "message" in error &&
       typeof error.message === "string"
     ) {
+      if ("code" in error && typeof error.code === "string") {
+        return `${error.code}: ${error.message}`
+      }
       return error.message
     }
   }
