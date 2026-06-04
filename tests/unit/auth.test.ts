@@ -26,7 +26,18 @@ describe("admin authentication", () => {
 
   it("Given lowercase bearer authorization When extracting api key Then the key is accepted", () => {
     // Given
-    const headers = new Headers({ Authorization: "bearer gorky_test_key" })
+    const headers = new Headers({ Authorization: "bearer  gorky_test_key  " })
+
+    // When
+    const apiKey = extractApiKey(headers)
+
+    // Then
+    expect(apiKey).toBe("gorky_test_key")
+  })
+
+  it("Given copied direct api key has whitespace When extracting api key Then whitespace is ignored", () => {
+    // Given
+    const headers = new Headers({ "x-api-key": "  gorky_test_key  " })
 
     // When
     const apiKey = extractApiKey(headers)

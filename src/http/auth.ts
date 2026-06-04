@@ -63,7 +63,7 @@ export function requireAdmin(headers: Headers, adminToken: string): Response | n
 }
 
 export function extractApiKey(headers: Headers): string | null {
-  const direct = headers.get("x-api-key")
+  const direct = headers.get("x-api-key")?.trim()
   if (direct) {
     return direct
   }
@@ -71,7 +71,8 @@ export function extractApiKey(headers: Headers): string | null {
   const authorization = headers.get("Authorization")
   const prefix = "Bearer "
   if (authorization?.toLowerCase().startsWith(prefix.toLowerCase())) {
-    return authorization.slice(prefix.length)
+    const bearer = authorization.slice(prefix.length).trim()
+    return bearer.length > 0 ? bearer : null
   }
 
   return null
