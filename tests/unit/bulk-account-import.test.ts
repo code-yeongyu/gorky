@@ -45,4 +45,33 @@ describe("bulk account import parser", () => {
       message: "Accounts JSON is invalid.",
     })
   })
+
+  it("Given an API-shaped accounts JSON object When parsing a batch Then accounts are accepted", () => {
+    // Given
+    const text = JSON.stringify({
+      accounts: [
+        {
+          email: "second@example.com",
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          expiresAt: 1_780_001_000_000,
+          modelIds: ["grok-composer-2.5-fast"],
+        },
+      ],
+    })
+
+    // When
+    const result = parseManualAccountBatch(text)
+
+    // Then
+    expect(result).toMatchObject({
+      kind: "success",
+      accounts: [
+        {
+          email: "second@example.com",
+          modelIds: ["grok-composer-2.5-fast"],
+        },
+      ],
+    })
+  })
 })

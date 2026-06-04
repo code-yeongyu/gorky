@@ -15,12 +15,13 @@ export function parseManualAccountBatch(text: string): BatchParseResult {
     throw error
   }
 
-  if (!Array.isArray(parsed)) {
-    return { kind: "failure", message: "Accounts JSON must be an array." }
+  const items = accountItemsFromParsed(parsed)
+  if (!items) {
+    return { kind: "failure", message: "Accounts JSON must be an array or accounts object." }
   }
 
   const accounts: ManualAccountInput[] = []
-  for (const item of parsed) {
+  for (const item of items) {
     const account = manualAccountFromUnknown(item)
     if (!account) {
       return { kind: "failure", message: "Every account needs email, tokens, expiry, and models." }
@@ -33,6 +34,17 @@ export function parseManualAccountBatch(text: string): BatchParseResult {
   }
 
   return { kind: "success", accounts }
+}
+
+function accountItemsFromParsed(value: unknown): readonly unknown[] | null {
+  if (Array.isArray(value)) {
+    return value
+  }
+  if (typeof value !== "object" || value === null) {
+    return null
+  }
+  const accounts = Reflect.get(value, "accounts")
+  return Array.isArray(accounts) ? accounts : null
 }
 
 function manualAccountFromUnknown(value: unknown): ManualAccountInput | null {
