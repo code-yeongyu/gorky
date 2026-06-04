@@ -140,4 +140,51 @@ describe("ensureFreshAccountToken", () => {
     })
     expect(account.refreshToken).toBe("old-refresh")
   })
+
+  it("Given refreshed token persistence fails When ensureFreshAccountToken runs Then an api error is returned", async () => {
+    // Given
+    const account: AccountTokenRecord = {
+      id: "acct_1",
+      email: "qa@example.com",
+      accessToken: "old-access",
+      refreshToken: "old-refresh",
+      expiresAt: Date.now() - 1,
+      modelIds: ["grok-composer-2.5-fast"],
+      status: "active",
+      lastUsedAt: null,
+    }
+    const store: TokenStore = {
+      saveRefreshedAccount: () => {
+        throw new Error("D1 failed with SENSITIVE_ACCESS_SENTINEL")
+      },
+    }
+    const client: TokenRefreshClient = {
+      refresh: async () => ({
+        kind: "success",
+        accessToken: "new-access",
+        refreshToken: "new-refresh",
+        expiresInSeconds: 21_600,
+      }),
+    }
+
+    // When
+    const result = await ensureFreshAccountToken({
+      account,
+      client,
+      now: Date.now(),
+      store,
+    })
+
+    // Then
+    expect(result.kind).toBe("failure")
+    if (result.kind !== "failure") {
+      throw new Error("Expected refresh persistence to fail")
+    }
+    expect(result.error).toEqual({
+      type: "api_error",
+      code: "account_refresh_persist_failed",
+      message: "Account refresh could not be saved",
+    })
+    expect(JSON.stringify(result)).not.toContain("SENSITIVE_ACCESS_SENTINEL")
+  })
 })

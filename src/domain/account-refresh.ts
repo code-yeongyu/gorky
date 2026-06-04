@@ -1,6 +1,7 @@
 import { redactSensitiveData } from "../lib/redaction"
 import type {
   AccountTokenRecord,
+  ApiError,
   FreshAccountResult,
   TokenRefreshClient,
   TokenStore,
@@ -34,7 +35,10 @@ export async function ensureFreshAccountToken(
         expiresAt: input.now + refresh.expiresInSeconds * 1000,
         status: "active",
       }
-      await input.store.saveRefreshedAccount(nextAccount)
+      const persisted = await persistRefreshedAccount(input.store, nextAccount)
+      if (persisted.kind === "failure") {
+        return { kind: "failure", account: nextAccount, error: persisted.error }
+      }
       return { kind: "success", account: nextAccount }
     }
     case "failure": {
@@ -42,7 +46,10 @@ export async function ensureFreshAccountToken(
         ...input.account,
         status: "refresh_failed",
       }
-      await input.store.saveRefreshedAccount(failedAccount)
+      const persisted = await persistRefreshedAccount(input.store, failedAccount)
+      if (persisted.kind === "failure") {
+        return { kind: "failure", account: failedAccount, error: persisted.error }
+      }
       return {
         kind: "failure",
         account: failedAccount,
@@ -53,6 +60,32 @@ export async function ensureFreshAccountToken(
         },
       }
     }
+  }
+}
+
+type PersistRefreshedAccountResult =
+  | { readonly kind: "success" }
+  | { readonly kind: "failure"; readonly error: ApiError }
+
+async function persistRefreshedAccount(
+  store: TokenStore,
+  account: AccountTokenRecord,
+): Promise<PersistRefreshedAccountResult> {
+  try {
+    await store.saveRefreshedAccount(account)
+    return { kind: "success" }
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        kind: "failure",
+        error: {
+          type: "api_error",
+          code: "account_refresh_persist_failed",
+          message: "Account refresh could not be saved",
+        },
+      }
+    }
+    throw error
   }
 }
 
