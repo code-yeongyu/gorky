@@ -95,6 +95,7 @@ export function registerOAuthRoutes(app: Hono, deps: AppDependencies): void {
         400,
       )
     }
+    await deps.oauthStateStore.delete(state)
 
     const modelValidation = validateConfiguredModels(deps, saved.modelIds)
     if (modelValidation.kind === "failure") {
@@ -132,7 +133,6 @@ export function registerOAuthRoutes(app: Hono, deps: AppDependencies): void {
       lastUsedAt: null,
     } satisfies AccountTokenRecord
     await deps.store.saveAccount(account)
-    await deps.oauthStateStore.delete(state)
     logOAuthEvent(deps, c.req.raw, c.req.path, "oauth_account_registered", 201, {
       accountId: account.id,
       modelIds: account.modelIds,

@@ -188,5 +188,6 @@ describe("OAuth account registration routes", () => {
     expect(logText).toContain("invalid_grant")
     expect(logText).not.toContain("SENSITIVE_CODE")
     expect(logText).not.toContain("verifier_abcdefghijklmnopqrstuvwxyz123456")
+    expect(await stateStore.get("state_2")).toBeNull()
   })
 })

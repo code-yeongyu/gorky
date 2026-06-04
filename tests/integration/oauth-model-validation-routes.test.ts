@@ -129,5 +129,6 @@ describe("OAuth model validation routes", () => {
     expect(text).not.toContain("SENSITIVE_REFRESH_SENTINEL")
     expect(exchangeCount).toBe(0)
     expect(store.accounts).toHaveLength(0)
+    expect(await stateStore.get("state_1")).toBeNull()
   })
 })
