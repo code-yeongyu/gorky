@@ -70,7 +70,15 @@ function emailFromIdToken(idToken: string | undefined): string | null {
   if (!payload) {
     return null
   }
-  const json = JSON.parse(atob(payload.replaceAll("-", "+").replaceAll("_", "/")))
+  let json: unknown
+  try {
+    json = JSON.parse(atob(payload.replaceAll("-", "+").replaceAll("_", "/")))
+  } catch (error) {
+    if (error instanceof Error) {
+      return null
+    }
+    throw error
+  }
   const parsed = JwtPayloadSchema.safeParse(json)
   if (!parsed.success) {
     return null
