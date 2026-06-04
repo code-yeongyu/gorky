@@ -112,6 +112,58 @@ describe("upstream response failure route handling", () => {
     expect(logText).not.toContain("redacted-access-token")
     expect(logText).not.toContain(apiKey.plaintextKey)
   })
+
+  it("Given upstream redirects When chat completions is called Then caller receives api error", async () => {
+    // Given
+    const apiKey = await createApiKey({
+      name: "qa-key",
+      allowedModels: ["grok-build"],
+      now: 1_780_000_000_000,
+      secretSeed: "upstream-redirect",
+    })
+    const account = createAccount("redacted-access-token", "redacted-refresh-token")
+    const store = createMemoryStore({ accounts: [account], apiKeys: [apiKey.record] })
+    const logs: unknown[] = []
+    const app = createApp({
+      store,
+      adminToken: "dev-admin-token",
+      now: () => 1_779_999_999_000,
+      logger: (event) => {
+        logs.push(event)
+      },
+      upstream: async () =>
+        new Response(null, {
+          status: 302,
+          headers: { location: "https://accounts.x.ai/redirect-with-token" },
+        }),
+      refreshClient: async (): Promise<TokenRefreshResult> => ({
+        kind: "success",
+        accessToken: "unused",
+        refreshToken: null,
+        expiresInSeconds: 21_600,
+      }),
+    })
+
+    // When
+    const response = await requestChat(app, apiKey.plaintextKey)
+    const body = await response.json()
+    const logText = JSON.stringify(logs)
+
+    // Then
+    expect(response.status).toBe(502)
+    expect(response.headers.get("location")).toBeNull()
+    expect(body).toMatchObject({
+      error: {
+        type: "grok_upstream_error",
+        code: "upstream_response_failed",
+      },
+    })
+    expect(store.accounts[0]?.lastUsedAt).toBeNull()
+    expect(store.apiKeys[0]?.lastUsedAt).toBeNull()
+    expect(logText).toContain("proxy_request_failed")
+    expect(logText).toContain("upstream_response_failed")
+    expect(logText).not.toContain("redirect-with-token")
+  })
 })
 
 function createAccount(accessToken: string, refreshToken: string): AccountTokenRecord {

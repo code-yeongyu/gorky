@@ -42,6 +42,9 @@ export async function forwardWithAuthRetry(input: {
   if (isUpstreamRateLimit(firstResponse.response.status)) {
     return upstreamRateLimitFailure(input.prepared.keyPrefix)
   }
+  if (isUpstreamRedirect(firstResponse.response.status)) {
+    return upstreamResponseFailure(input.prepared.keyPrefix)
+  }
   if (isUpstreamServerFailure(firstResponse.response.status)) {
     return upstreamResponseFailure(input.prepared.keyPrefix)
   }
@@ -88,6 +91,9 @@ export async function forwardWithAuthRetry(input: {
   }
   if (isUpstreamRateLimit(retryResponse.response.status)) {
     return upstreamRateLimitFailure(input.prepared.keyPrefix)
+  }
+  if (isUpstreamRedirect(retryResponse.response.status)) {
+    return upstreamResponseFailure(input.prepared.keyPrefix)
   }
   if (isUpstreamServerFailure(retryResponse.response.status)) {
     return upstreamResponseFailure(input.prepared.keyPrefix)
@@ -174,6 +180,10 @@ function isUpstreamAuthFailure(status: number): boolean {
 
 function isUpstreamRateLimit(status: number): boolean {
   return status === 429
+}
+
+function isUpstreamRedirect(status: number): boolean {
+  return status >= 300 && status < 400
 }
 
 function isUpstreamServerFailure(status: number): boolean {
