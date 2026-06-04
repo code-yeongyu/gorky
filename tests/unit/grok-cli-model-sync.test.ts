@@ -42,6 +42,25 @@ Available models:
     expect(models).toEqual([])
   })
 
+  it("Given grok models output has footer text When parsing available models Then footer lines are ignored", () => {
+    // Given
+    const output = `
+Default model: grok-build
+
+Available models:
+  grok-build
+  grok-composer-2.5-fast
+
+Use grok config set model <model> to change the default.
+`
+
+    // When
+    const models = parseGrokCliAvailableModels(output)
+
+    // Then
+    expect(models).toEqual(["grok-build", "grok-composer-2.5-fast"])
+  })
+
   it("Given wrangler config When updating model ids Then every environment receives the same list", () => {
     // Given
     const config = `

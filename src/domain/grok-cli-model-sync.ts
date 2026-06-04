@@ -29,10 +29,17 @@ export function parseGrokCliAvailableModels(output: string): readonly string[] {
     return []
   }
 
-  const models = lines
-    .slice(availableIndex + 1)
-    .map((line) => line.trim().replace(/^[-*]\s+/, ""))
-    .filter((line) => line.length > 0)
+  const models: string[] = []
+  for (const line of lines.slice(availableIndex + 1)) {
+    const model = line.trim().replace(/^[-*]\s+/, "")
+    if (!model) {
+      if (models.length > 0) {
+        break
+      }
+      continue
+    }
+    models.push(model)
+  }
 
   return [...new Set(models)]
 }
