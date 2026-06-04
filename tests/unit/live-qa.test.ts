@@ -10,6 +10,7 @@ import {
   assertPublicAssetResponse,
   assertPublicScriptResponse,
   assertSecurityHeaders,
+  assertServiceWorkerScript,
   ManifestResponseSchema,
   V1ModelsResponseSchema,
 } from "../../src/domain/live-qa"
@@ -201,6 +202,35 @@ describe("live QA contracts", () => {
     expect(() => assertPublicScriptResponse(response)).toThrow(
       "Expected service worker script to be JavaScript",
     )
+  })
+
+  it("Given a service worker script handles API routes When checking the script Then the QA check fails", () => {
+    // Given
+    const script = `
+      self.addEventListener("fetch", (event) => {
+        event.respondWith(fetch(event.request))
+      })
+    `
+
+    // When / Then
+    expect(() => assertServiceWorkerScript(script)).toThrow(
+      "Service worker must bypass API and health routes",
+    )
+  })
+
+  it("Given a service worker script bypasses API routes When checking the script Then the QA check passes", () => {
+    // Given
+    const script = `
+      const API_PATH_PREFIXES = ["/api/", "/v1/"]
+      const API_PATHS = ["/health"]
+      function isApiRequest(url) {
+        return API_PATHS.includes(url.pathname) ||
+          API_PATH_PREFIXES.some((pathPrefix) => url.pathname.startsWith(pathPrefix))
+      }
+    `
+
+    // When / Then
+    expect(() => assertServiceWorkerScript(script)).not.toThrow()
   })
 
   it("Given security headers are complete When checking headers Then the QA check passes", () => {

@@ -15,6 +15,7 @@ import {
   assertPublicAssetResponse,
   assertPublicScriptResponse,
   assertSecurityHeaders,
+  assertServiceWorkerScript,
 } from "../src/domain/live-qa.ts"
 
 const DEFAULT_BASE_URL = "https://gorky.code-yeon-gyu.workers.dev"
@@ -216,6 +217,7 @@ async function verifyPublicScript(baseUrl: URL, assetPath: string, label: string
     contentType: response.headers.get("content-type"),
     label,
   })
+  assertServiceWorkerScript(await response.text())
 }
 
 try {

@@ -91,6 +91,13 @@ const REQUIRED_SECURITY_HEADERS = [
   },
 ] as const
 
+const SERVICE_WORKER_REQUIRED_FRAGMENTS = [
+  "isApiRequest",
+  '"/api/"',
+  '"/v1/"',
+  '"/health"',
+] as const
+
 export function assertMatchingModelCatalog(
   apiModels: z.infer<typeof ApiModelsResponseSchema>,
   v1Models: z.infer<typeof V1ModelsResponseSchema>,
@@ -148,6 +155,13 @@ export function assertPublicScriptResponse(response: PublicAssetResponse): void 
       `Expected ${response.label} script to be JavaScript, got ${response.contentType}`,
     )
   }
+}
+
+export function assertServiceWorkerScript(script: string): void {
+  if (SERVICE_WORKER_REQUIRED_FRAGMENTS.every((fragment) => script.includes(fragment))) {
+    return
+  }
+  throw new Error("Service worker must bypass API and health routes")
 }
 
 export function assertSecurityHeaders(headers: Headers, label: string): void {
