@@ -182,6 +182,7 @@ describe("live QA contracts", () => {
       "content-security-policy": "default-src 'self'; frame-ancestors 'none'",
       "permissions-policy": "camera=(), microphone=(), geolocation=()",
       "referrer-policy": "no-referrer",
+      "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
       "x-content-type-options": "nosniff",
       "x-frame-options": "DENY",
     })
@@ -195,6 +196,7 @@ describe("live QA contracts", () => {
     const headers = new Headers({
       "content-security-policy": "default-src 'self'; frame-ancestors 'none'",
       "permissions-policy": "camera=()",
+      "strict-transport-security": "max-age=31536000",
       "x-content-type-options": "nosniff",
       "x-frame-options": "DENY",
     })

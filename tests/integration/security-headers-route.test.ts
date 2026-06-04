@@ -26,6 +26,7 @@ describe("security headers", () => {
     expect(response.headers.get("content-security-policy") ?? "").toContain("default-src 'self'")
     expect(response.headers.get("x-content-type-options")).toBe("nosniff")
     expect(response.headers.get("referrer-policy")).toBe("no-referrer")
+    expect(response.headers.get("strict-transport-security") ?? "").toContain("max-age=31536000")
     expect(response.headers.get("x-frame-options")).toBe("DENY")
     expect(response.headers.get("permissions-policy") ?? "").toContain("camera=()")
   })

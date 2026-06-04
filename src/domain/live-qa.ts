@@ -63,6 +63,7 @@ const REQUIRED_SECURITY_HEADERS = [
   "content-security-policy",
   "permissions-policy",
   "referrer-policy",
+  "strict-transport-security",
   "x-content-type-options",
   "x-frame-options",
 ] as const
