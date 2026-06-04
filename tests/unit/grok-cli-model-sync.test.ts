@@ -64,6 +64,25 @@ Use grok config set model <model> to change the default.
     expect(models).toEqual(["grok-build", "grok-composer-2.5-fast"])
   })
 
+  it("Given grok models output marks the default model When parsing available models Then the marker is ignored", () => {
+    // Given
+    const output = `
+You are logged in with grok.com.
+
+Default model: grok-build
+
+Available models:
+  - grok-composer-2.5-fast
+  * grok-build (default)
+`
+
+    // When
+    const models = parseGrokCliAvailableModels(output)
+
+    // Then
+    expect(models).toEqual(["grok-composer-2.5-fast", "grok-build"])
+  })
+
   it("Given grok models output has an inline footer When parsing available models Then only model ids are extracted", () => {
     // Given
     const output = `
