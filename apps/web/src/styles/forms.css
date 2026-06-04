@@ -82,13 +82,22 @@ fieldset {
 }
 
 .key-output {
+  align-items: center;
   border: 1px solid var(--status-warning);
   border-radius: 6px;
   color: var(--status-warning);
   display: grid;
   gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
   margin-top: 16px;
   padding: 12px;
+}
+
+.key-output span {
+  display: block;
+  font-family: "SF Mono", "Geist Mono", ui-monospace, monospace;
+  font-size: 12px;
+  margin-bottom: 4px;
 }
 
 .key-output code {
@@ -108,6 +117,11 @@ fieldset {
 
 @media (max-width: 860px) {
   .token-form {
+    grid-template-columns: 1fr;
+  }
+
+  .key-output {
+    align-items: start;
     grid-template-columns: 1fr;
   }
 }

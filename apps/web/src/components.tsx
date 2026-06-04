@@ -1,5 +1,8 @@
-import type { ApiKeyRow } from "./api"
-import type { FormSubmitEvent } from "./form-utils"
+import type { ApiKeyRow, CreateKeyResponse } from "./api"
+import { copyTextToClipboard } from "./clipboard"
+import { type FormSubmitEvent, messageFromError } from "./form-utils"
+
+type NoticePayload = { readonly kind: "success" | "error"; readonly message: string }
 
 export function DashboardMetrics(props: {
   readonly activeAccounts: number
@@ -154,6 +157,37 @@ export function KeyForm(props: {
       <CheckboxGroup name="allowedModels" models={props.models} />
       <button type="submit">Create key</button>
     </form>
+  )
+}
+
+export function GeneratedKeyOutput(props: {
+  readonly generatedKey: CreateKeyResponse
+  readonly onNotice: (notice: NoticePayload) => void
+}): React.ReactElement {
+  async function copyGeneratedApiKey(): Promise<void> {
+    try {
+      const clipboard =
+        "clipboard" in globalThis.navigator ? globalThis.navigator.clipboard : undefined
+      const result = await copyTextToClipboard(clipboard, props.generatedKey.plaintextKey)
+      props.onNotice({
+        kind: result === "copied" ? "success" : "error",
+        message: result === "copied" ? "API key copied." : "Clipboard is unavailable.",
+      })
+    } catch (error) {
+      props.onNotice({ kind: "error", message: messageFromError(error) })
+    }
+  }
+
+  return (
+    <output className="key-output" aria-label="Generated API key">
+      <div>
+        <span>{props.generatedKey.keyPrefix}</span>
+        <code>{props.generatedKey.plaintextKey}</code>
+      </div>
+      <button type="button" onClick={copyGeneratedApiKey}>
+        Copy
+      </button>
+    </output>
   )
 }
 

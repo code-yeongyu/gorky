@@ -16,6 +16,7 @@ import {
 import {
   AdminTokenForm,
   DashboardMetrics,
+  GeneratedKeyOutput,
   KeyForm,
   KeyList,
   ManualAccountForm,
@@ -52,9 +53,7 @@ export function App(): React.ReactElement {
   const modelOptions = useMemo(() => (models.length ? models : ["grok-build"]), [models])
 
   async function refreshDashboard(token = adminToken): Promise<void> {
-    if (!token) {
-      return
-    }
+    if (!token) return
     setIsLoading(true)
     try {
       const [nextAccounts, nextKeys] = await Promise.all([fetchAccounts(token), fetchKeys(token)])
@@ -257,10 +256,10 @@ export function App(): React.ReactElement {
             <KeyList apiKeys={apiKeys} isBusy={isLoading} onRevoke={revokeApiKey} />
             <KeyForm models={modelOptions} onSubmit={createKey} />
             {generatedKey ? (
-              <output className="key-output" aria-label="Generated API key">
-                <span>{generatedKey.keyPrefix}</span>
-                <code>{generatedKey.plaintextKey}</code>
-              </output>
+              <GeneratedKeyOutput
+                generatedKey={generatedKey}
+                onNotice={(nextNotice) => setNotice(nextNotice)}
+              />
             ) : null}
           </section>
         </section>
