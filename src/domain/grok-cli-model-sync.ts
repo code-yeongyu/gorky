@@ -43,10 +43,17 @@ export function parseGrokCliAvailableModels(output: string): readonly string[] {
       }
       continue
     }
+    if (!isGrokModelId(model)) {
+      break
+    }
     models.push(model)
   }
 
   return [...new Set(models)]
+}
+
+function isGrokModelId(value: string): boolean {
+  return /^grok-[A-Za-z0-9._-]+$/.test(value)
 }
 
 export function summarizeGrokModelsCache(value: unknown): GrokModelsCacheSummary {

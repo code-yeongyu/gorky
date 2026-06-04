@@ -62,6 +62,22 @@ Use grok config set model <model> to change the default.
     expect(models).toEqual(["grok-build", "grok-composer-2.5-fast"])
   })
 
+  it("Given grok models output has an inline footer When parsing available models Then only model ids are extracted", () => {
+    // Given
+    const output = `
+Available models:
+  grok-build
+  grok-composer-2.5-fast
+Use grok config set model <model> to change the default.
+`
+
+    // When
+    const models = parseGrokCliAvailableModels(output)
+
+    // Then
+    expect(models).toEqual(["grok-build", "grok-composer-2.5-fast"])
+  })
+
   it("Given wrangler config When updating model ids Then every environment receives the same list", () => {
     // Given
     const config = `
