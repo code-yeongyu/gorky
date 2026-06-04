@@ -80,6 +80,18 @@ export async function forwardWithAuthRetry(input: {
   if (retryResponse.kind === "failure") {
     return retryResponse
   }
+  if (isUpstreamAuthFailure(retryResponse.response.status)) {
+    return {
+      kind: "failure",
+      status: 502,
+      keyPrefix: input.prepared.keyPrefix,
+      error: toOpenAiError(
+        "grok_upstream_error",
+        "upstream_auth_failed",
+        "Grok upstream authentication failed after refresh",
+      ).error,
+    }
+  }
   return { kind: "success", response: retryResponse.response, account: refreshed.account }
 }
 
