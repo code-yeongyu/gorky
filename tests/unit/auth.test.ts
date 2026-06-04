@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { extractApiKey, requireAdmin } from "../../src/http/auth"
+import { extractApiKey, getRequestId, requireAdmin } from "../../src/http/auth"
 
 describe("admin authentication", () => {
   it("Given matching admin token When requiring admin Then the request is allowed", () => {
@@ -55,5 +55,28 @@ describe("admin authentication", () => {
 
     // Then
     expect(apiKey).toBe("gorky_test_key")
+  })
+
+  it("Given request id has whitespace When reading request id Then whitespace is ignored", () => {
+    // Given
+    const headers = new Headers({ "x-request-id": "  req_123  " })
+
+    // When
+    const requestId = getRequestId(headers)
+
+    // Then
+    expect(requestId).toBe("req_123")
+  })
+
+  it("Given request id is blank When reading request id Then a usable id is generated", () => {
+    // Given
+    const headers = new Headers({ "x-request-id": "   " })
+
+    // When
+    const requestId = getRequestId(headers)
+
+    // Then
+    expect(requestId.trim().length).toBeGreaterThan(0)
+    expect(requestId).not.toBe("   ")
   })
 })

@@ -91,7 +91,8 @@ export async function readJson(request: Request): Promise<unknown> {
 }
 
 export function getRequestId(headers: Headers): string {
-  return headers.get("x-request-id") ?? crypto.randomUUID()
+  const requestId = headers.get("x-request-id")?.trim()
+  return requestId ? requestId : crypto.randomUUID()
 }
 
 export function toOpenAiError(
