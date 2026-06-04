@@ -117,7 +117,7 @@ export function registerOAuthRoutes(app: Hono, deps: AppDependencies): void {
         modelIds: saved.modelIds,
       })
       return c.json(
-        toOpenAiError("grok_authorization_error", exchanged.errorCode, exchanged.message),
+        toOpenAiError("grok_authorization_error", exchanged.errorCode, "Grok authorization failed"),
         502,
       )
     }

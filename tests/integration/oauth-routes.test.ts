@@ -216,7 +216,7 @@ describe("OAuth account registration routes", () => {
         exchangeCode: async () => ({
           kind: "failure",
           errorCode: "invalid_grant",
-          message: "OAuth code rejected by xAI",
+          message: "OAuth code rejected with Bearer SENSITIVE_ACCESS_SENTINEL",
         }),
       },
     })
@@ -232,7 +232,9 @@ describe("OAuth account registration routes", () => {
     expect(text).toContain("invalid_grant")
     expect(logText).toContain("oauth_callback_failed")
     expect(logText).toContain("invalid_grant")
+    expect(text).not.toContain("SENSITIVE_ACCESS_SENTINEL")
     expect(logText).not.toContain("SENSITIVE_CODE")
+    expect(logText).not.toContain("SENSITIVE_ACCESS_SENTINEL")
     expect(logText).not.toContain("verifier_abcdefghijklmnopqrstuvwxyz123456")
     expect(await stateStore.get("state_2")).toBeNull()
   })
