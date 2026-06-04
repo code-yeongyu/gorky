@@ -39,7 +39,7 @@ class FakeD1Statement {
     private readonly sql: string,
   ) {}
 
-  bind(...values: unknown[]): FakeD1Statement {
+  bind(...values: readonly unknown[]): FakeD1Statement {
     this.bindings = values
     return this
   }

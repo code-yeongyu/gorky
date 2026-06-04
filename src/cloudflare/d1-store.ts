@@ -28,7 +28,18 @@ const ApiKeyRowSchema = z.object({
 
 const ModelIdsSchema = z.array(z.string())
 
-export function createD1Store(db: D1Database, tokenSecret: string): GorkyStore {
+type D1StoreStatement = {
+  readonly bind: (...values: readonly unknown[]) => D1StoreStatement
+  readonly run: () => Promise<unknown>
+  readonly all: () => Promise<{ readonly results: readonly unknown[] }>
+  readonly first: () => Promise<unknown | null>
+}
+
+type D1StoreDatabase = {
+  readonly prepare: (sql: string) => D1StoreStatement
+}
+
+export function createD1Store(db: D1StoreDatabase, tokenSecret: string): GorkyStore {
   return {
     listAccounts: async () => {
       const result = await db.prepare("SELECT * FROM accounts").all()

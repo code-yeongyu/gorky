@@ -7,7 +7,7 @@ describe("D1 store", () => {
   it("Given account tokens When saving and listing Then ciphertext is stored and plaintext round-trips", async () => {
     // Given
     const db = new FakeD1Database()
-    const store = createD1Store(db as unknown as D1Database, "0123456789abcdef0123456789abcdef")
+    const store = createD1Store(db, "0123456789abcdef0123456789abcdef")
     const account: AccountTokenRecord = {
       id: "acct_1",
       email: "qa@example.com",
@@ -33,7 +33,7 @@ describe("D1 store", () => {
   it("Given an account When disabling Then status round-trips without token loss", async () => {
     // Given
     const db = new FakeD1Database()
-    const store = createD1Store(db as unknown as D1Database, "0123456789abcdef0123456789abcdef")
+    const store = createD1Store(db, "0123456789abcdef0123456789abcdef")
     const account: AccountTokenRecord = {
       id: "acct_1",
       email: "qa@example.com",
@@ -61,7 +61,7 @@ describe("D1 store", () => {
   it("Given accounts When finding one by id Then only that account round-trips", async () => {
     // Given
     const db = new FakeD1Database()
-    const store = createD1Store(db as unknown as D1Database, "0123456789abcdef0123456789abcdef")
+    const store = createD1Store(db, "0123456789abcdef0123456789abcdef")
     const firstAccount: AccountTokenRecord = {
       id: "acct_1",
       email: "first@example.com",
@@ -97,7 +97,7 @@ describe("D1 store", () => {
   it("Given an api key record When saving and listing Then JSON model restrictions round-trip", async () => {
     // Given
     const db = new FakeD1Database()
-    const store = createD1Store(db as unknown as D1Database, "0123456789abcdef0123456789abcdef")
+    const store = createD1Store(db, "0123456789abcdef0123456789abcdef")
     const record: ApiKeyRecord = {
       id: "key_1",
       keyHash: "hash_1",
@@ -123,7 +123,7 @@ describe("D1 store", () => {
   it("Given an api key record When touching usage Then last used timestamp round-trips", async () => {
     // Given
     const db = new FakeD1Database()
-    const store = createD1Store(db as unknown as D1Database, "0123456789abcdef0123456789abcdef")
+    const store = createD1Store(db, "0123456789abcdef0123456789abcdef")
     const record: ApiKeyRecord = {
       id: "key_1",
       keyHash: "hash_1",
@@ -148,7 +148,7 @@ describe("D1 store", () => {
   it("Given an api key record When revoking Then revoked timestamp round-trips", async () => {
     // Given
     const db = new FakeD1Database()
-    const store = createD1Store(db as unknown as D1Database, "0123456789abcdef0123456789abcdef")
+    const store = createD1Store(db, "0123456789abcdef0123456789abcdef")
     const record: ApiKeyRecord = {
       id: "key_1",
       keyHash: "hash_1",
