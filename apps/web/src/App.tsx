@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { AccountList } from "./account-list"
 import {
   type AccountRow,
   type ApiKeyRow,
@@ -12,7 +13,6 @@ import {
   revokeKey,
 } from "./api"
 import {
-  AccountList,
   AdminTokenForm,
   DashboardMetrics,
   KeyForm,
