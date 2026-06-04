@@ -5,7 +5,11 @@ const SENSITIVE_KEYS = new Set([
   "access_token",
   "refresh_token",
   "id_token",
+  "apiKey",
+  "adminToken",
+  "client_secret",
   "key",
+  "password",
   "refreshToken",
   "accessToken",
 ])
@@ -13,7 +17,7 @@ const SENSITIVE_KEYS = new Set([
 const SECRET_STRING_PATTERNS = [
   /\bBearer\s+[A-Za-z0-9._~+/=-]+/g,
   /\bgorky_(?![0-9a-f]{6}\b)[A-Za-z0-9._-]+/g,
-  /\b(?:access_token|refresh_token|id_token)=([^&\s]+)/g,
+  /\b(?:access_token|refresh_token|id_token|client_secret)=([^&\s]+)/g,
 ] as const
 
 export function redactSensitiveData(value: unknown): unknown {

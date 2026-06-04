@@ -49,4 +49,27 @@ describe("redactSensitiveData", () => {
     expect(text).not.toContain("SENSITIVE_REFRESH_SENTINEL")
     expect(text).not.toContain("gorky_secret_plaintext")
   })
+
+  it("Given dashboard and OAuth secret aliases When redaction runs Then raw values are sanitized", () => {
+    // Given
+    const input = {
+      adminToken: "SENSITIVE_ADMIN_SENTINEL",
+      apiKey: "SENSITIVE_API_KEY_SENTINEL",
+      callback: "https://auth.x.ai/oauth2/token?client_secret=SENSITIVE_CLIENT_SECRET&code=ok",
+      nested: {
+        password: "SENSITIVE_PASSWORD_SENTINEL",
+      },
+    }
+
+    // When
+    const redacted = redactSensitiveData(input)
+    const text = JSON.stringify(redacted)
+
+    // Then
+    expect(text).toContain("[REDACTED]")
+    expect(text).not.toContain("SENSITIVE_ADMIN_SENTINEL")
+    expect(text).not.toContain("SENSITIVE_API_KEY_SENTINEL")
+    expect(text).not.toContain("SENSITIVE_CLIENT_SECRET")
+    expect(text).not.toContain("SENSITIVE_PASSWORD_SENTINEL")
+  })
 })
