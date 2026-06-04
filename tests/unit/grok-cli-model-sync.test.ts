@@ -79,6 +79,20 @@ GROK_MODEL_IDS = "grok-build"
     expect(nextConfig.match(/GROK_MODEL_IDS/g)).toHaveLength(2)
   })
 
+  it("Given wrangler config already has model ids When updating model ids Then sync is idempotent", () => {
+    // Given
+    const config = `
+[vars]
+GROK_MODEL_IDS = "grok-composer-2.5-fast,grok-build"
+`
+
+    // When
+    const nextConfig = updateWranglerModelIds(config, ["grok-composer-2.5-fast", "grok-build"])
+
+    // Then
+    expect(nextConfig).toBe(config)
+  })
+
   it("Given wrangler config is missing model ids When updating model ids Then sync fails loudly", () => {
     // Given
     const config = `

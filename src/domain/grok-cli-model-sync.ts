@@ -92,9 +92,10 @@ export function updateWranglerModelIds(toml: string, modelIds: readonly string[]
   }
 
   const nextValue = `GROK_MODEL_IDS = "${modelIds.join(",")}"`
-  const nextToml = toml.replace(/^GROK_MODEL_IDS = ".*"$/gm, nextValue)
-  if (nextToml === toml) {
+  const existingModelConfigCount = toml.match(/^GROK_MODEL_IDS = ".*"$/gm)?.length ?? 0
+  if (existingModelConfigCount === 0) {
     throw new Error("wrangler.toml is missing GROK_MODEL_IDS")
   }
+  const nextToml = toml.replace(/^GROK_MODEL_IDS = ".*"$/gm, nextValue)
   return nextToml
 }
