@@ -6,7 +6,7 @@ import { createMemoryStore } from "../../src/testing/memory-store"
 
 const OAUTH_STATE: OAuthStateRecord = {
   codeVerifier: "verifier_abcdefghijklmnopqrstuvwxyz123456",
-  redirectUri: "https://gorky.example.com/api/oauth/callback",
+  redirectUri: "http://127.0.0.1:34567/callback",
   nonce: "nonce_abcdefghijklmnopqrstuvwxyz",
   modelIds: ["grok-composer-2.5-fast"],
   createdAt: 1_780_000_000_000,
@@ -35,7 +35,7 @@ describe("OAuth state failure routes", () => {
         "x-admin-token": "dev-admin-token",
       },
       body: JSON.stringify({
-        redirectUri: "https://gorky.example.com/api/oauth/callback",
+        redirectUri: "http://127.0.0.1:34567/callback",
         modelIds: ["grok-composer-2.5-fast"],
       }),
     })

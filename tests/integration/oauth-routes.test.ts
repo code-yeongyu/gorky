@@ -61,7 +61,7 @@ describe("OAuth account registration routes", () => {
         "x-admin-token": "dev-admin-token",
       },
       body: JSON.stringify({
-        redirectUri: "https://gorky.example.com/api/oauth/callback",
+        redirectUri: "http://127.0.0.1:34567/callback",
         modelIds: ["grok-composer-2.5-fast"],
       }),
     })
@@ -72,7 +72,7 @@ describe("OAuth account registration routes", () => {
     expect(response.status).toBe(201)
     expect(body.authorizationUrl).toContain("https://auth.x.ai/oauth2/authorize")
     expect(body.authorizationUrl).toContain("code_challenge_method=S256")
-    expect(saved?.redirectUri).toBe("https://gorky.example.com/api/oauth/callback")
+    expect(saved?.redirectUri).toBe("http://127.0.0.1:34567/callback")
     expect(saved?.modelIds).toEqual(["grok-composer-2.5-fast"])
   })
 

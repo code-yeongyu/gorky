@@ -2,6 +2,7 @@ import { type ManualAccountInput, registerAccounts, requestJson } from "./api"
 import { parseManualAccountBatch } from "./bulk-account-import"
 import { ManualAccountForm, OAuthForm } from "./components"
 import { type FormSubmitEvent, messageFromError, stringField } from "./form-utils"
+import { buildOAuthStartBody } from "./oauth-start-form"
 
 type Notice = { readonly kind: "success" | "error" | "info"; readonly message: string }
 
@@ -14,21 +15,18 @@ export function RegistrationPanel(props: {
   async function startOAuth(event: FormSubmitEvent): Promise<void> {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
-    const redirectUri =
-      stringField(form, "redirectUri") || `${globalThis.location.origin}/api/oauth/callback`
-    const selectedModels = form.getAll("modelIds").map(String)
+    const startBody = buildOAuthStartBody(form, props.models)
+    if (startBody.kind === "failure") {
+      props.onNotice({ kind: "error", message: startBody.message })
+      return
+    }
     try {
       const response = await requestJson<{ readonly authorizationUrl: string }>(
         "/api/admin/oauth/start",
         {
           method: "POST",
           adminToken: props.adminToken,
-          body: {
-            redirectUri,
-            modelIds: selectedModels.length
-              ? selectedModels
-              : [props.models[0] ?? "grok-composer-2.5-fast"],
-          },
+          body: startBody.body,
         },
       )
       globalThis.location.assign(response.authorizationUrl)

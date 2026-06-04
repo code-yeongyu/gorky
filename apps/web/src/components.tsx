@@ -101,7 +101,11 @@ export function OAuthForm(props: {
       <h3>OAuth start</h3>
       <label>
         Callback URL
-        <input name="redirectUri" autoComplete="off" placeholder="Default callback URL" />
+        <input
+          name="redirectUri"
+          autoComplete="off"
+          placeholder="http://127.0.0.1:<port>/callback"
+        />
       </label>
       <CheckboxGroup name="modelIds" models={props.models} />
       <button type="submit">Open OAuth</button>

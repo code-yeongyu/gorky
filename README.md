@@ -104,6 +104,11 @@ wrangler secret put TOKEN_ENCRYPTION_SECRET
 registration. The callback stores only encrypted token material and returns a
 redacted account record.
 
+OAuth start accepts only Grok CLI loopback callbacks such as
+`http://127.0.0.1:<port>/callback`. Deployed Worker callback URLs are rejected
+as `unsupported_oauth_redirect_uri` because the public Grok CLI OIDC client is
+registered for native loopback redirects.
+
 Manual batch registration accepts an array or `{ "accounts": [...] }` object of
 account token sets, stores them through a single D1 batch operation, and returns
 only redacted account records.

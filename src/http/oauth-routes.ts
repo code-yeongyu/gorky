@@ -1,7 +1,7 @@
 import type { Hono } from "hono"
 import type { AppDependencies } from "../app"
 import { DEFAULT_GROK_MODELS } from "../domain/models"
-import { createAuthorizationStart } from "../domain/oauth"
+import { createAuthorizationStart, isGrokCliLoopbackRedirectUri } from "../domain/oauth"
 import type { AccountTokenRecord } from "../domain/types"
 import { saveRegisteredAccounts } from "./admin-account-registration"
 import { getRequestId, readJson, requireAdmin, toOpenAiError } from "./auth"
@@ -52,6 +52,19 @@ export function registerOAuthRoutes(app: Hono, deps: AppDependencies): void {
         unknownModelIds: modelValidation.unknownModelIds,
       })
       return c.json({ error: modelValidation.error }, 400)
+    }
+    if (!isGrokCliLoopbackRedirectUri(parsed.data.redirectUri)) {
+      logOAuthEvent(deps, c.req.raw, c.req.path, "oauth_start_failed", 400, {
+        errorCode: "unsupported_oauth_redirect_uri",
+      })
+      return c.json(
+        toOpenAiError(
+          "invalid_request_error",
+          "unsupported_oauth_redirect_uri",
+          "Grok CLI OAuth requires a loopback callback such as http://127.0.0.1:<port>/callback",
+        ),
+        400,
+      )
     }
 
     const start = await createAuthorizationStart({

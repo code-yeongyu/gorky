@@ -71,4 +71,12 @@ describe("package scripts", () => {
     // When / Then
     expect(readme).toContain('array or `{ "accounts": [...] }` object')
   })
+
+  it("Given Grok CLI OAuth uses native callbacks When reading README Then loopback redirect limits are documented", async () => {
+    // Given
+    const readme = await readFile("README.md", "utf8")
+
+    // When / Then
+    expect(readme).toContain("OAuth start accepts only Grok CLI loopback callbacks")
+  })
 })

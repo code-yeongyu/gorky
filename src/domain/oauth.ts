@@ -92,6 +92,12 @@ export async function createAuthorizationStart(input: {
   }
 }
 
+export function isGrokCliLoopbackRedirectUri(value: string): boolean {
+  const url = new URL(value)
+  const isLoopbackHost = url.hostname === "127.0.0.1" || url.hostname === "localhost"
+  return url.protocol === "http:" && isLoopbackHost && url.pathname === "/callback"
+}
+
 function randomUrlSafeToken(byteLength: number): string {
   const bytes = new Uint8Array(byteLength)
   crypto.getRandomValues(bytes)
