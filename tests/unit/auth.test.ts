@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { requireAdmin } from "../../src/http/auth"
+import { extractApiKey, requireAdmin } from "../../src/http/auth"
 
 describe("admin authentication", () => {
   it("Given matching admin token When requiring admin Then the request is allowed", () => {
@@ -22,5 +22,16 @@ describe("admin authentication", () => {
 
     // Then
     expect(response?.status).toBe(401)
+  })
+
+  it("Given lowercase bearer authorization When extracting api key Then the key is accepted", () => {
+    // Given
+    const headers = new Headers({ Authorization: "bearer gorky_test_key" })
+
+    // When
+    const apiKey = extractApiKey(headers)
+
+    // Then
+    expect(apiKey).toBe("gorky_test_key")
   })
 })

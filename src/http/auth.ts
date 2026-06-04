@@ -70,7 +70,7 @@ export function extractApiKey(headers: Headers): string | null {
 
   const authorization = headers.get("Authorization")
   const prefix = "Bearer "
-  if (authorization?.startsWith(prefix)) {
+  if (authorization?.toLowerCase().startsWith(prefix.toLowerCase())) {
     return authorization.slice(prefix.length)
   }
 
