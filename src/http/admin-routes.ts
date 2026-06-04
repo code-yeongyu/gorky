@@ -1,111 +1,17 @@
 import type { Hono } from "hono"
 import type { AppDependencies } from "../app"
 import { ensureFreshAccountToken } from "../domain/account-refresh"
-import { createApiKey } from "../domain/api-key"
 import { createRegisteredAccount, saveRegisteredAccounts } from "./admin-account-registration"
 import { registerAdminBulkAccountRoutes } from "./admin-bulk-account-routes"
-import { saveRegisteredApiKey } from "./admin-key-registration"
-import { logAdminEvent, redactAccount, redactApiKey } from "./admin-presenters"
+import { registerAdminKeyRoutes } from "./admin-key-routes"
+import { logAdminEvent, redactAccount } from "./admin-presenters"
 import { readJson, requireAdmin, toOpenAiError } from "./auth"
 import { validateConfiguredModels } from "./model-validation"
-import { CreateKeyRequestSchema, RegisterAccountRequestSchema } from "./schemas"
+import { RegisterAccountRequestSchema } from "./schemas"
 
 export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
   registerAdminBulkAccountRoutes(app, deps)
-
-  app.get("/api/admin/keys", async (c) => {
-    const auth = requireAdmin(c.req.raw.headers, deps.adminToken)
-    if (auth) {
-      logAdminEvent(deps, c.req.raw, c.req.path, "admin_auth_failed", 401)
-      return auth
-    }
-
-    const keys = await deps.store.listApiKeys()
-    logAdminEvent(deps, c.req.raw, c.req.path, "admin_keys_listed", 200, {
-      count: keys.length,
-      keyPrefixes: keys.map((key) => key.keyPrefix),
-    })
-    return c.json({
-      keys: keys.map(redactApiKey),
-    })
-  })
-
-  app.post("/api/admin/keys", async (c) => {
-    const auth = requireAdmin(c.req.raw.headers, deps.adminToken)
-    if (auth) {
-      logAdminEvent(deps, c.req.raw, c.req.path, "admin_auth_failed", 401)
-      return auth
-    }
-
-    const parsed = CreateKeyRequestSchema.safeParse(await readJson(c.req.raw))
-    if (!parsed.success) {
-      logAdminEvent(deps, c.req.raw, c.req.path, "admin_key_create_failed", 400, {
-        errorCode: "invalid_json",
-      })
-      return c.json(toOpenAiError("invalid_request_error", "invalid_json", "Invalid key body"), 400)
-    }
-    const modelValidation = validateConfiguredModels(deps, parsed.data.allowedModels)
-    if (modelValidation.kind === "failure") {
-      logAdminEvent(deps, c.req.raw, c.req.path, "admin_key_create_failed", 400, {
-        errorCode: modelValidation.error.code,
-        unknownModelIds: modelValidation.unknownModelIds,
-      })
-      return c.json({ error: modelValidation.error }, 400)
-    }
-
-    const created = await createApiKey({
-      name: parsed.data.name,
-      allowedModels: parsed.data.allowedModels,
-      now: deps.now(),
-    })
-    const saved = await saveRegisteredApiKey(deps, created.record)
-    if (saved.kind === "failure") {
-      logAdminEvent(deps, c.req.raw, c.req.path, "admin_key_create_failed", 502, {
-        errorCode: saved.error.code,
-        keyPrefix: created.record.keyPrefix,
-      })
-      return c.json({ error: saved.error }, 502)
-    }
-
-    logAdminEvent(deps, c.req.raw, c.req.path, "admin_key_created", 201, {
-      keyPrefix: created.record.keyPrefix,
-      allowedModels: created.record.allowedModels,
-    })
-
-    return c.json(
-      {
-        id: created.record.id,
-        plaintextKey: created.plaintextKey,
-        keyPrefix: created.record.keyPrefix,
-        name: created.record.name,
-        allowedModels: created.record.allowedModels,
-        createdAt: created.record.createdAt,
-      },
-      201,
-    )
-  })
-
-  app.post("/api/admin/keys/:id/revoke", async (c) => {
-    const auth = requireAdmin(c.req.raw.headers, deps.adminToken)
-    if (auth) {
-      logAdminEvent(deps, c.req.raw, c.req.path, "admin_auth_failed", 401)
-      return auth
-    }
-
-    const key = await deps.store.revokeApiKey(c.req.param("id"), deps.now())
-    if (!key) {
-      logAdminEvent(deps, c.req.raw, c.req.path, "admin_key_revoke_failed", 404, {
-        errorCode: "key_not_found",
-      })
-      return c.json(toOpenAiError("invalid_request_error", "key_not_found", "Key not found"), 404)
-    }
-
-    logAdminEvent(deps, c.req.raw, c.req.path, "admin_key_revoked", 200, {
-      keyPrefix: key.keyPrefix,
-      revokedAt: key.revokedAt,
-    })
-    return c.json({ key: redactApiKey(key) })
-  })
+  registerAdminKeyRoutes(app, deps)
 
   app.post("/api/admin/accounts", async (c) => {
     const auth = requireAdmin(c.req.raw.headers, deps.adminToken)
