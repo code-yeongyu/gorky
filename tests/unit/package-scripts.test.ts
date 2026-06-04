@@ -58,5 +58,7 @@ describe("package scripts", () => {
     // When / Then
     expect(readme).toContain("POST /api/admin/accounts/bulk")
     expect(liveQaScript).toContain('path: "/api/admin/accounts/bulk"')
+    expect(liveQaScript).toContain('new URL("/api/admin/accounts/bulk", baseUrl)')
+    expect(liveQaScript).toContain("grok-live-qa-bulk-missing")
   })
 })

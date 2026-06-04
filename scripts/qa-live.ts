@@ -96,11 +96,11 @@ async function runHttpChecks(baseUrl: URL): Promise<void> {
 async function runAdminErrorChecks(baseUrl: URL): Promise<void> {
   const adminToken = process.env["GORKY_LIVE_ADMIN_TOKEN"] ?? process.env["GORKY_ADMIN_TOKEN"]
   if (!adminToken) {
-    console.log("OAuth unknown-model live check skipped: set GORKY_LIVE_ADMIN_TOKEN to enable it")
+    console.log("Admin unknown-model live checks skipped: set GORKY_LIVE_ADMIN_TOKEN to enable them")
     return
   }
 
-  const response = await ky.post(new URL("/api/admin/oauth/start", baseUrl), {
+  const oauthResponse = await ky.post(new URL("/api/admin/oauth/start", baseUrl), {
     headers: { "x-admin-token": adminToken },
     json: {
       redirectUri: new URL("/api/oauth/callback", baseUrl).href,
@@ -108,8 +108,26 @@ async function runAdminErrorChecks(baseUrl: URL): Promise<void> {
     },
     throwHttpErrors: false,
   })
-  assertOAuthUnknownModelResponse(response.status, await response.json())
+  assertOAuthUnknownModelResponse(oauthResponse.status, await oauthResponse.json())
   console.log("OAuth unknown-model live check ok")
+
+  const bulkResponse = await ky.post(new URL("/api/admin/accounts/bulk", baseUrl), {
+    headers: { "x-admin-token": adminToken },
+    json: {
+      accounts: [
+        {
+          email: "live-qa-bulk@example.com",
+          accessToken: "LIVE_QA_ACCESS_SHOULD_NOT_STORE",
+          refreshToken: "LIVE_QA_REFRESH_SHOULD_NOT_STORE",
+          expiresAt: 1_780_000_000_000,
+          modelIds: ["grok-live-qa-bulk-missing"],
+        },
+      ],
+    },
+    throwHttpErrors: false,
+  })
+  assertOAuthUnknownModelResponse(bulkResponse.status, await bulkResponse.json())
+  console.log("Bulk unknown-model live check ok")
 }
 
 async function getJson<TSchema extends z.ZodType>(
