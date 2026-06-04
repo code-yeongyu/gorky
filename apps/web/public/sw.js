@@ -1,5 +1,7 @@
 const CACHE_NAME = "gorky-shell-v1"
 const SHELL_ASSETS = ["/", "/manifest.webmanifest", "/favicon.svg", "/og.svg"]
+const API_PATH_PREFIXES = ["/api/", "/v1/"]
+const API_PATHS = ["/health"]
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -27,7 +29,8 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const request = event.request
-  if (request.method !== "GET" || new URL(request.url).origin !== self.location.origin) {
+  const url = new URL(request.url)
+  if (request.method !== "GET" || url.origin !== self.location.origin || isApiRequest(url)) {
     return
   }
 
@@ -41,4 +44,11 @@ self.addEventListener("fetch", (event) => {
 
 function cachedResponse(request) {
   return caches.match(request).then((response) => response || Response.error())
+}
+
+function isApiRequest(url) {
+  return (
+    API_PATHS.includes(url.pathname) ||
+    API_PATH_PREFIXES.some((pathPrefix) => url.pathname.startsWith(pathPrefix))
+  )
 }
