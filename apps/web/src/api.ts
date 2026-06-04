@@ -3,6 +3,7 @@ export type AccountStatus = "active" | "refresh_failed" | "disabled"
 export type AccountRow = {
   readonly id: string
   readonly email: string
+  readonly principalType: string
   readonly status: AccountStatus
   readonly expiresAt: number
   readonly modelIds: readonly string[]

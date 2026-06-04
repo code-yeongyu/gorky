@@ -1,3 +1,4 @@
+import { accountPrincipalLabel } from "./account-presenters"
 import type { AccountRow } from "./api"
 
 export function AccountList(props: {
@@ -19,7 +20,10 @@ export function AccountList(props: {
               {account.status}
             </span>
             <h3>{account.email}</h3>
-            <p>Expires {formatDate(account.expiresAt)}</p>
+            <p>
+              {accountPrincipalLabel(account.principalType)} - Expires{" "}
+              {formatDate(account.expiresAt)}
+            </p>
           </div>
           <ModelChips models={account.modelIds} label={`${account.email} models`} />
           <div className="row-actions">
