@@ -10,7 +10,7 @@ describe("admin account registration routes", () => {
     const baseStore = createMemoryStore({ accounts: [], apiKeys: [] })
     const store = {
       ...baseStore,
-      saveAccount: async (): Promise<void> => {
+      saveAccounts: async (): Promise<void> => {
         throw new Error("D1 write failed for SENSITIVE_ACCESS_SENTINEL")
       },
     } satisfies GorkyStore

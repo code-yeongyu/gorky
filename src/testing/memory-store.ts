@@ -25,6 +25,9 @@ export function createMemoryStore(input: MemoryStoreInput): MemoryStore {
     saveAccount: async (account) => {
       accounts.push(account)
     },
+    saveAccounts: async (nextAccounts) => {
+      accounts.push(...nextAccounts)
+    },
     saveRefreshedAccount: async (account) => {
       const index = accounts.findIndex((candidate) => candidate.id === account.id)
       if (index >= 0) {

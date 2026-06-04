@@ -28,18 +28,22 @@ const ApiKeyRowSchema = z.object({
 
 const ModelIdsSchema = z.array(z.string())
 
-type D1StoreStatement = {
-  readonly bind: (...values: readonly unknown[]) => D1StoreStatement
+type D1StoreStatement<TStatement> = {
+  readonly bind: (...values: readonly unknown[]) => TStatement
   readonly run: () => Promise<unknown>
   readonly all: () => Promise<{ readonly results: readonly unknown[] }>
   readonly first: () => Promise<unknown | null>
 }
 
-type D1StoreDatabase = {
-  readonly prepare: (sql: string) => D1StoreStatement
+type D1StoreDatabase<TStatement extends D1StoreStatement<TStatement>> = {
+  readonly prepare: (sql: string) => TStatement
+  readonly batch: (statements: TStatement[]) => Promise<readonly unknown[]>
 }
 
-export function createD1Store(db: D1StoreDatabase, tokenSecret: string): GorkyStore {
+export function createD1Store<TStatement extends D1StoreStatement<TStatement>>(
+  db: D1StoreDatabase<TStatement>,
+  tokenSecret: string,
+): GorkyStore {
   return {
     listAccounts: async () => {
       const result = await db.prepare("SELECT * FROM accounts").all()
@@ -54,27 +58,14 @@ export function createD1Store(db: D1StoreDatabase, tokenSecret: string): GorkySt
       return accountFromRow(AccountRowSchema.parse(row), tokenSecret)
     },
     saveAccount: async (account) => {
-      const encryptedAccessToken = await encryptToken(tokenSecret, account.accessToken)
-      const encryptedRefreshToken = await encryptToken(tokenSecret, account.refreshToken)
-      await db
-        .prepare(
-          `INSERT INTO accounts (
-            id, email, principal_type, access_token_ciphertext, refresh_token_ciphertext,
-            expires_at, model_ids, status, last_used_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        )
-        .bind(
-          account.id,
-          account.email,
-          "User",
-          encryptedAccessToken,
-          encryptedRefreshToken,
-          account.expiresAt,
-          JSON.stringify(account.modelIds),
-          account.status,
-          account.lastUsedAt,
-        )
-        .run()
+      const statement = await createInsertAccountStatement(db, tokenSecret, account)
+      await statement.run()
+    },
+    saveAccounts: async (accounts) => {
+      const statements = await Promise.all(
+        accounts.map((account) => createInsertAccountStatement(db, tokenSecret, account)),
+      )
+      await db.batch(statements)
     },
     saveRefreshedAccount: async (account) => {
       const encryptedAccessToken = await encryptToken(tokenSecret, account.accessToken)
@@ -176,6 +167,33 @@ export function createD1Store(db: D1StoreDatabase, tokenSecret: string): GorkySt
         .run()
     },
   }
+}
+
+async function createInsertAccountStatement<TStatement extends D1StoreStatement<TStatement>>(
+  db: D1StoreDatabase<TStatement>,
+  tokenSecret: string,
+  account: AccountTokenRecord,
+): Promise<TStatement> {
+  const encryptedAccessToken = await encryptToken(tokenSecret, account.accessToken)
+  const encryptedRefreshToken = await encryptToken(tokenSecret, account.refreshToken)
+  return db
+    .prepare(
+      `INSERT INTO accounts (
+        id, email, principal_type, access_token_ciphertext, refresh_token_ciphertext,
+        expires_at, model_ids, status, last_used_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(
+      account.id,
+      account.email,
+      "User",
+      encryptedAccessToken,
+      encryptedRefreshToken,
+      account.expiresAt,
+      JSON.stringify(account.modelIds),
+      account.status,
+      account.lastUsedAt,
+    )
 }
 
 async function accountFromRow(

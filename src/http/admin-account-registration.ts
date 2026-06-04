@@ -27,9 +27,7 @@ export async function saveRegisteredAccounts(
   accounts: readonly AccountTokenRecord[],
 ): Promise<SaveRegisteredAccountsResult> {
   try {
-    for (const account of accounts) {
-      await deps.store.saveAccount(account)
-    }
+    await deps.store.saveAccounts(accounts)
     return { kind: "success", accounts }
   } catch (error) {
     if (error instanceof Error) {

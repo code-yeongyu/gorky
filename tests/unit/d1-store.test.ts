@@ -94,6 +94,44 @@ describe("D1 store", () => {
     expect(missing).toBeNull()
   })
 
+  it("Given multiple accounts When saving accounts Then D1 batch stores encrypted rows", async () => {
+    // Given
+    const db = new FakeD1Database()
+    const store = createD1Store(db, "0123456789abcdef0123456789abcdef")
+    const accounts: readonly AccountTokenRecord[] = [
+      {
+        id: "acct_1",
+        email: "first@example.com",
+        accessToken: "SENSITIVE_FIRST_ACCESS",
+        refreshToken: "SENSITIVE_FIRST_REFRESH",
+        expiresAt: 1_780_000_000_000,
+        modelIds: ["grok-build"],
+        status: "active",
+        lastUsedAt: null,
+      },
+      {
+        id: "acct_2",
+        email: "second@example.com",
+        accessToken: "SENSITIVE_SECOND_ACCESS",
+        refreshToken: "SENSITIVE_SECOND_REFRESH",
+        expiresAt: 1_780_000_100_000,
+        modelIds: ["grok-composer-2.5-fast"],
+        status: "active",
+        lastUsedAt: null,
+      },
+    ]
+
+    // When
+    await store.saveAccounts(accounts)
+    const listed = await store.listAccounts()
+
+    // Then
+    expect(db.batchCallCount).toBe(1)
+    expect(db.accounts.get("acct_1")?.access_token_ciphertext).not.toBe("SENSITIVE_FIRST_ACCESS")
+    expect(db.accounts.get("acct_2")?.refresh_token_ciphertext).not.toBe("SENSITIVE_SECOND_REFRESH")
+    expect(listed).toEqual(accounts)
+  })
+
   it("Given an api key record When saving and listing Then JSON model restrictions round-trip", async () => {
     // Given
     const db = new FakeD1Database()

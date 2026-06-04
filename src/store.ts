@@ -4,6 +4,7 @@ export type GorkyStore = {
   readonly listAccounts: () => Promise<readonly AccountTokenRecord[]>
   readonly findAccountById: (accountId: string) => Promise<AccountTokenRecord | null>
   readonly saveAccount: (account: AccountTokenRecord) => Promise<void>
+  readonly saveAccounts: (accounts: readonly AccountTokenRecord[]) => Promise<void>
   readonly saveRefreshedAccount: (account: AccountTokenRecord) => Promise<void>
   readonly disableAccount: (accountId: string) => Promise<AccountTokenRecord | null>
   readonly enableAccount: (accountId: string) => Promise<AccountTokenRecord | null>

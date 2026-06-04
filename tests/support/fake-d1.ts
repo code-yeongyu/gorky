@@ -25,10 +25,42 @@ type ApiKeyRow = {
 export class FakeD1Database {
   readonly accounts = new Map<string, AccountRow>()
   readonly apiKeys = new Map<string, ApiKeyRow>()
+  batchCallCount = 0
 
   prepare(sql: string): FakeD1Statement {
     return new FakeD1Statement(this, sql)
   }
+
+  async batch(statements: readonly FakeD1Statement[]): Promise<readonly unknown[]> {
+    this.batchCallCount += 1
+    const accountSnapshot = cloneAccountRows(this.accounts)
+    const apiKeySnapshot = cloneApiKeyRows(this.apiKeys)
+    try {
+      const results: unknown[] = []
+      for (const statement of statements) {
+        results.push(await statement.run())
+      }
+      return results
+    } catch (error) {
+      this.accounts.clear()
+      for (const [key, value] of accountSnapshot) {
+        this.accounts.set(key, value)
+      }
+      this.apiKeys.clear()
+      for (const [key, value] of apiKeySnapshot) {
+        this.apiKeys.set(key, value)
+      }
+      throw error
+    }
+  }
+}
+
+function cloneAccountRows(input: ReadonlyMap<string, AccountRow>): Map<string, AccountRow> {
+  return new Map([...input.entries()].map(([key, value]) => [key, { ...value }]))
+}
+
+function cloneApiKeyRows(input: ReadonlyMap<string, ApiKeyRow>): Map<string, ApiKeyRow> {
+  return new Map([...input.entries()].map(([key, value]) => [key, { ...value }]))
 }
 
 class FakeD1Statement {
