@@ -2,8 +2,10 @@ import type { Hono } from "hono"
 import type { AppDependencies } from "../app"
 import { ensureFreshAccountToken } from "../domain/account-refresh"
 import { selectAccountForModel } from "../domain/account-selection"
-import { authenticateApiKey, getRequestId, readJson, toOpenAiError } from "./auth"
+import { authenticateApiKey, readJson, toOpenAiError } from "./auth"
 import { validateConfiguredModels } from "./model-validation"
+import { durationSince, logProxyFailure, logProxySuccess } from "./proxy-logging"
+import { recordProxyUsage } from "./proxy-usage"
 import { ChatCompletionRequestSchema, ResponsesRequestSchema } from "./schemas"
 import { forwardWithAuthRetry, type PreparedProxyAccount } from "./upstream-forwarding"
 
@@ -75,16 +77,32 @@ export function registerProxyRoutes(
     }
 
     const usedAt = deps.now()
-    await deps.store.touchAccount(upstream.account.id, usedAt)
-    await deps.store.touchApiKey(prepared.keyHash, usedAt)
-    deps.logger?.({
-      event: "chat_completion",
-      requestId: getRequestId(c.req.raw.headers),
+    const usage = await recordProxyUsage({
+      deps,
+      accountId: upstream.account.id,
+      keyHash: prepared.keyHash,
+      usedAt,
+    })
+    if (usage.kind === "failure") {
+      logProxyFailure(
+        deps,
+        c.req.raw,
+        c.req.path,
+        usage.status,
+        parsed.data.model,
+        { ...usage, keyPrefix: prepared.keyPrefix },
+        durationSince(deps, startedAt),
+      )
+      return c.json({ error: usage.error }, usage.status)
+    }
+    logProxySuccess({
+      deps,
+      request: c.req.raw,
       path: c.req.path,
-      method: c.req.method,
-      keyPrefix: prepared.keyPrefix,
+      event: "chat_completion",
       status: upstream.response.status,
       model: parsed.data.model,
+      keyPrefix: prepared.keyPrefix,
       durationMs: durationSince(deps, startedAt),
     })
     return upstream.response
@@ -144,16 +162,32 @@ export function registerProxyRoutes(
     }
 
     const usedAt = deps.now()
-    await deps.store.touchAccount(upstream.account.id, usedAt)
-    await deps.store.touchApiKey(prepared.keyHash, usedAt)
-    deps.logger?.({
-      event: "responses",
-      requestId: getRequestId(c.req.raw.headers),
+    const usage = await recordProxyUsage({
+      deps,
+      accountId: upstream.account.id,
+      keyHash: prepared.keyHash,
+      usedAt,
+    })
+    if (usage.kind === "failure") {
+      logProxyFailure(
+        deps,
+        c.req.raw,
+        c.req.path,
+        usage.status,
+        parsed.data.model,
+        { ...usage, keyPrefix: prepared.keyPrefix },
+        durationSince(deps, startedAt),
+      )
+      return c.json({ error: usage.error }, usage.status)
+    }
+    logProxySuccess({
+      deps,
+      request: c.req.raw,
       path: c.req.path,
-      method: c.req.method,
-      keyPrefix: prepared.keyPrefix,
+      event: "responses",
       status: upstream.response.status,
       model: parsed.data.model,
+      keyPrefix: prepared.keyPrefix,
       durationMs: durationSince(deps, startedAt),
     })
     return upstream.response
@@ -220,36 +254,4 @@ async function prepareAccount(
     keyHash: auth.record.keyHash,
     keyPrefix: auth.record.keyPrefix,
   } as const
-}
-
-function logProxyFailure(
-  deps: AppDependencies,
-  request: Request,
-  path: string,
-  status: number,
-  model: string,
-  failure: {
-    readonly error: { readonly code: string; readonly type: string }
-    readonly keyPrefix?: string
-  },
-  durationMs: number,
-): void {
-  const event = {
-    event: "proxy_request_failed",
-    requestId: getRequestId(request.headers),
-    path,
-    method: request.method,
-    status,
-    model,
-    durationMs,
-    metadata: {
-      errorCode: failure.error.code,
-      errorType: failure.error.type,
-    },
-  }
-  deps.logger?.(failure.keyPrefix ? { ...event, keyPrefix: failure.keyPrefix } : event)
-}
-
-function durationSince(deps: AppDependencies, startedAt: number): number {
-  return Math.max(0, deps.now() - startedAt)
 }
