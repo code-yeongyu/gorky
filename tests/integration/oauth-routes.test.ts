@@ -76,6 +76,52 @@ describe("OAuth account registration routes", () => {
     expect(saved?.modelIds).toEqual(["grok-build"])
   })
 
+  it("Given non-http redirect URI When OAuth start is requested Then state is not stored", async () => {
+    // Given
+    const stateStore = createMemoryOAuthStateStore()
+    const app = createApp({
+      store: createMemoryStore({ accounts: [], apiKeys: [] }),
+      adminToken: "dev-admin-token",
+      now: () => 1_780_000_000_000,
+      upstream: async () => Response.json({ ok: true }),
+      refreshClient: async (): Promise<TokenRefreshResult> => ({
+        kind: "success",
+        accessToken: "unused",
+        refreshToken: null,
+        expiresInSeconds: 21_600,
+      }),
+      oauthIssuer: "https://auth.x.ai",
+      oauthClientId: "client_1",
+      oauthStateStore: stateStore,
+      oauthAuthorizationClient: {
+        exchangeCode: async () => ({
+          kind: "failure",
+          errorCode: "unused",
+          message: "unused",
+        }),
+      },
+    })
+
+    // When
+    const response = await app.request("/api/admin/oauth/start", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-admin-token": "dev-admin-token",
+      },
+      body: JSON.stringify({
+        redirectUri: "javascript:alert(1)",
+        modelIds: ["grok-build"],
+      }),
+    })
+    const text = await response.text()
+
+    // Then
+    expect(response.status).toBe(400)
+    expect(text).toContain("invalid_json")
+    expect(stateStore.records.size).toBe(0)
+  })
+
   it("Given saved OAuth state When callback succeeds Then account is stored without returning tokens", async () => {
     // Given
     const store = createMemoryStore({ accounts: [], apiKeys: [] })

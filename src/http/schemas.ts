@@ -29,6 +29,12 @@ export const RegisterAccountRequestSchema = z.object({
 })
 
 export const OAuthStartRequestSchema = z.object({
-  redirectUri: z.url(),
+  redirectUri: z.url().refine(
+    (value) => {
+      const protocol = new URL(value).protocol
+      return protocol === "https:" || protocol === "http:"
+    },
+    { message: "Redirect URI must use HTTP or HTTPS" },
+  ),
   modelIds: z.array(z.string().min(1)).min(1).optional(),
 })
