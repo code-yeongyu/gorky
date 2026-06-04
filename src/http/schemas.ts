@@ -1,7 +1,14 @@
 import { z } from "zod"
 
+const NonEmptyTrimmedStringSchema = z.string().trim().min(1)
+
+const ModelIdSetSchema = z
+  .array(NonEmptyTrimmedStringSchema)
+  .min(1)
+  .transform((modelIds) => [...new Set(modelIds)])
+
 export const ChatCompletionRequestSchema = z.looseObject({
-  model: z.string().min(1),
+  model: NonEmptyTrimmedStringSchema,
   messages: z.array(
     z.object({
       role: z.string().min(1),
@@ -12,12 +19,12 @@ export const ChatCompletionRequestSchema = z.looseObject({
 })
 
 export const ResponsesRequestSchema = z.looseObject({
-  model: z.string().min(1),
+  model: NonEmptyTrimmedStringSchema,
 })
 
 export const CreateKeyRequestSchema = z.object({
-  name: z.string().min(1),
-  allowedModels: z.array(z.string().min(1)).min(1),
+  name: NonEmptyTrimmedStringSchema,
+  allowedModels: ModelIdSetSchema,
 })
 
 export const RegisterAccountRequestSchema = z.object({
@@ -25,7 +32,7 @@ export const RegisterAccountRequestSchema = z.object({
   accessToken: z.string().min(1),
   refreshToken: z.string().min(1),
   expiresAt: z.number().int().positive(),
-  modelIds: z.array(z.string().min(1)).min(1),
+  modelIds: ModelIdSetSchema,
 })
 
 export const OAuthStartRequestSchema = z.object({
@@ -36,5 +43,5 @@ export const OAuthStartRequestSchema = z.object({
     },
     { message: "Redirect URI must use HTTP or HTTPS" },
   ),
-  modelIds: z.array(z.string().min(1)).min(1).optional(),
+  modelIds: ModelIdSetSchema.optional(),
 })

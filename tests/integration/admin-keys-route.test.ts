@@ -5,6 +5,8 @@ import type { AccountTokenRecord, TokenRefreshResult } from "../../src/domain/ty
 import { createMemoryStore } from "../../src/testing/memory-store"
 
 const CreatedKeyResponseSchema = z.object({
+  name: z.string(),
+  allowedModels: z.array(z.string()),
   plaintextKey: z.string(),
   keyPrefix: z.string(),
   keyHash: z.string().optional(),
@@ -35,8 +37,8 @@ describe("admin key routes", () => {
         "x-admin-token": "dev-admin-token",
       },
       body: JSON.stringify({
-        name: "qa-key",
-        allowedModels: ["grok-composer-2.5-fast"],
+        name: " qa-key ",
+        allowedModels: [" grok-composer-2.5-fast ", "grok-composer-2.5-fast"],
       }),
     })
     const body = CreatedKeyResponseSchema.parse(await response.json())
@@ -46,7 +48,11 @@ describe("admin key routes", () => {
     expect(body.plaintextKey).toMatch(/^gorky_/)
     expect(body.keyPrefix).toBe(body.plaintextKey.slice(0, 12))
     expect(body.keyHash).toBeUndefined()
+    expect(body.name).toBe("qa-key")
+    expect(body.allowedModels).toEqual(["grok-composer-2.5-fast"])
     expect(store.apiKeys).toHaveLength(1)
+    expect(store.apiKeys[0]?.name).toBe("qa-key")
+    expect(store.apiKeys[0]?.allowedModels).toEqual(["grok-composer-2.5-fast"])
     expect(store.apiKeys[0]?.keyHash).not.toBe(body.plaintextKey)
   })
 
