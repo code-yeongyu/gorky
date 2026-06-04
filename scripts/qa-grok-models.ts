@@ -6,6 +6,7 @@ import ky from "ky"
 import { ApiModelsResponseSchema, assertModelCatalogContains } from "../src/domain/live-qa.ts"
 import {
   buildEmptyGrokModelsDiagnostic,
+  buildMissingGrokBinaryDiagnostic,
   type GrokModelsCacheSummary,
   parseGrokCliAvailableModels,
   readWranglerModelIdSets,
@@ -19,7 +20,7 @@ const WRANGLER_CONFIG_PATH = new URL("../wrangler.toml", import.meta.url)
 async function main(): Promise<void> {
   const grokBin = process.env["GORKY_GROK_BIN"] ?? "grok"
   const baseUrl = new URL(process.env["GORKY_LIVE_BASE_URL"] ?? DEFAULT_BASE_URL)
-  const { stdout } = await execFileAsync(grokBin, ["models"])
+  const stdout = await readGrokModelsOutput(grokBin)
   const cliModels = parseGrokCliAvailableModels(stdout)
   if (!cliModels.length) {
     const grokHome = process.env["GROK_HOME"] ?? `${homedir()}/.grok`
@@ -50,6 +51,22 @@ async function main(): Promise<void> {
   }
   assertModelCatalogContains(cliModels, liveModels, "live /api/models")
   console.log(`Grok model parity ok: ${cliModels.join(", ")}`)
+}
+
+async function readGrokModelsOutput(grokBin: string): Promise<string> {
+  try {
+    const { stdout } = await execFileAsync(grokBin, ["models"])
+    return stdout
+  } catch (error) {
+    if (isMissingExecutableError(error)) {
+      throw new Error(buildMissingGrokBinaryDiagnostic(grokBin))
+    }
+    throw error
+  }
+}
+
+function isMissingExecutableError(error: unknown): boolean {
+  return error instanceof Error && "code" in error && error.code === "ENOENT"
 }
 
 async function fileExists(path: string): Promise<boolean> {

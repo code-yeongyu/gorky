@@ -87,6 +87,15 @@ export function buildEmptyGrokModelsDiagnostic(input: EmptyGrokModelsDiagnosticI
   return lines.join("\n")
 }
 
+export function buildMissingGrokBinaryDiagnostic(grokBin: string): string {
+  return [
+    `Grok CLI binary was not found: ${grokBin}`,
+    "Install the Grok CLI.",
+    "Set GORKY_GROK_BIN to the Grok CLI absolute path.",
+    "Common local path: /Users/yeongyu/.grok/bin/grok",
+  ].join("\n")
+}
+
 function cacheDiagnosticLine(cache: GrokModelsCacheSummary): string {
   switch (cache.kind) {
     case "missing":

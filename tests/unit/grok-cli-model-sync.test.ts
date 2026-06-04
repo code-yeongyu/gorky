@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   buildEmptyGrokModelsDiagnostic,
+  buildMissingGrokBinaryDiagnostic,
   parseGrokCliAvailableModels,
   readWranglerModelIdSets,
   summarizeGrokModelsCache,
@@ -171,5 +172,15 @@ GROK_MODEL_IDS = "grok-composer-2.5-fast"
       "Cached model catalog: 2 model(s) from api_key: grok-composer-2.5-fast, grok-build",
     )
     expect(message).toContain("/Users/qa/.grok/bin/grok login --device-auth")
+  })
+
+  it("Given grok binary is missing When building diagnostics Then the setup fix is explained", () => {
+    // When
+    const message = buildMissingGrokBinaryDiagnostic("grok")
+
+    // Then
+    expect(message).toContain("Grok CLI binary was not found: grok")
+    expect(message).toContain("Set GORKY_GROK_BIN")
+    expect(message).toContain("/Users/yeongyu/.grok/bin/grok")
   })
 })
