@@ -1,5 +1,4 @@
 import { z } from "zod"
-import { parseGrokModelIds } from "./models"
 
 const GrokModelsCacheSchema = z.object({
   auth_method: z.string().optional(),
@@ -121,7 +120,7 @@ export function readWranglerModelIdSets(toml: string): readonly WranglerModelIdS
     if (modelIdsMatch?.[1] !== undefined) {
       modelSets.push({
         label: currentSection,
-        modelIds: parseGrokModelIds(modelIdsMatch[1]),
+        modelIds: parseModelIds(modelIdsMatch[1]),
       })
     }
   }
@@ -130,4 +129,11 @@ export function readWranglerModelIdSets(toml: string): readonly WranglerModelIdS
     throw new Error("wrangler.toml is missing GROK_MODEL_IDS")
   }
   return modelSets
+}
+
+function parseModelIds(value: string): readonly string[] {
+  return value
+    .split(",")
+    .map((modelId) => modelId.trim())
+    .filter((modelId) => modelId.length > 0)
 }
