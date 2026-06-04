@@ -139,7 +139,7 @@ async function callUpstream(
   keyPrefix: string,
 ): Promise<{ readonly kind: "success"; readonly response: Response } | ForwardFailure> {
   try {
-    return { kind: "success", response: await deps.upstream(request) }
+    return { kind: "success", response: sanitizeUpstreamResponse(await deps.upstream(request)) }
   } catch (error) {
     if (error instanceof Error) {
       return {
@@ -155,6 +155,17 @@ async function callUpstream(
     }
     throw error
   }
+}
+
+function sanitizeUpstreamResponse(response: Response): Response {
+  const headers = new Headers(response.headers)
+  headers.delete("set-cookie")
+  headers.delete("set-cookie2")
+  return new Response(response.body, {
+    headers,
+    status: response.status,
+    statusText: response.statusText,
+  })
 }
 
 function isUpstreamAuthFailure(status: number): boolean {
