@@ -54,11 +54,13 @@ describe("package scripts", () => {
     // Given
     const readme = await readFile("README.md", "utf8")
     const liveQaScript = await readFile("scripts/qa-live.ts", "utf8")
+    const adminChecks = await readFile("src/domain/live-qa-admin-checks.ts", "utf8")
 
     // When / Then
     expect(readme).toContain("POST /api/admin/accounts/bulk")
     expect(liveQaScript).toContain('path: "/api/admin/accounts/bulk"')
-    expect(liveQaScript).toContain('new URL("/api/admin/accounts/bulk", baseUrl)')
-    expect(liveQaScript).toContain("grok-live-qa-bulk-missing")
+    expect(liveQaScript).toContain("buildAdminUnknownModelLiveChecks")
+    expect(adminChecks).toContain('new URL("/api/admin/accounts/bulk", baseUrl)')
+    expect(adminChecks).toContain("grok-live-qa-bulk-missing")
   })
 })

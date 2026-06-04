@@ -18,6 +18,7 @@ import {
   assertSecurityHeaders,
   assertServiceWorkerScript,
 } from "../src/domain/live-qa.ts"
+import { buildAdminUnknownModelLiveChecks } from "../src/domain/live-qa-admin-checks.ts"
 
 const DEFAULT_BASE_URL = "https://gorky.code-yeon-gyu.workers.dev"
 const SCREENSHOT_DIR = new URL("../.qa/", import.meta.url)
@@ -100,34 +101,15 @@ async function runAdminErrorChecks(baseUrl: URL): Promise<void> {
     return
   }
 
-  const oauthResponse = await ky.post(new URL("/api/admin/oauth/start", baseUrl), {
-    headers: { "x-admin-token": adminToken },
-    json: {
-      redirectUri: new URL("/api/oauth/callback", baseUrl).href,
-      modelIds: ["grok-live-qa-missing"],
-    },
-    throwHttpErrors: false,
-  })
-  assertOAuthUnknownModelResponse(oauthResponse.status, await oauthResponse.json())
-  console.log("OAuth unknown-model live check ok")
-
-  const bulkResponse = await ky.post(new URL("/api/admin/accounts/bulk", baseUrl), {
-    headers: { "x-admin-token": adminToken },
-    json: {
-      accounts: [
-        {
-          email: "live-qa-bulk@example.com",
-          accessToken: "LIVE_QA_ACCESS_SHOULD_NOT_STORE",
-          refreshToken: "LIVE_QA_REFRESH_SHOULD_NOT_STORE",
-          expiresAt: 1_780_000_000_000,
-          modelIds: ["grok-live-qa-bulk-missing"],
-        },
-      ],
-    },
-    throwHttpErrors: false,
-  })
-  assertOAuthUnknownModelResponse(bulkResponse.status, await bulkResponse.json())
-  console.log("Bulk unknown-model live check ok")
+  for (const check of buildAdminUnknownModelLiveChecks(baseUrl)) {
+    const response = await ky.post(check.url, {
+      headers: { "x-admin-token": adminToken },
+      json: check.body,
+      throwHttpErrors: false,
+    })
+    assertOAuthUnknownModelResponse(response.status, await response.json())
+    console.log(`${check.label} unknown-model live check ok`)
+  }
 }
 
 async function getJson<TSchema extends z.ZodType>(
