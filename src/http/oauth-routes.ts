@@ -4,6 +4,7 @@ import { DEFAULT_GROK_MODELS } from "../domain/models"
 import { createAuthorizationStart } from "../domain/oauth"
 import type { AccountTokenRecord } from "../domain/types"
 import { getRequestId, readJson, requireAdmin, toOpenAiError } from "./auth"
+import { validateConfiguredModels } from "./model-validation"
 import { OAuthStartRequestSchema } from "./schemas"
 
 const OAUTH_STATE_TTL_SECONDS = 600
@@ -36,11 +37,21 @@ export function registerOAuthRoutes(app: Hono, deps: AppDependencies): void {
       )
     }
 
+    const requestedModelIds = parsed.data.modelIds ?? deps.models ?? DEFAULT_GROK_MODELS
+    const modelValidation = validateConfiguredModels(deps, requestedModelIds)
+    if (modelValidation.kind === "failure") {
+      logOAuthEvent(deps, c.req.raw, c.req.path, "oauth_start_failed", 400, {
+        errorCode: modelValidation.error.code,
+        unknownModelIds: modelValidation.unknownModelIds,
+      })
+      return c.json({ error: modelValidation.error }, 400)
+    }
+
     const start = await createAuthorizationStart({
       issuer: deps.oauthIssuer,
       clientId: deps.oauthClientId,
       redirectUri: parsed.data.redirectUri,
-      modelIds: parsed.data.modelIds ?? deps.models ?? DEFAULT_GROK_MODELS,
+      modelIds: requestedModelIds,
       now: deps.now(),
     })
     await deps.oauthStateStore.put(start.state, start.stateRecord, OAUTH_STATE_TTL_SECONDS)
@@ -83,6 +94,15 @@ export function registerOAuthRoutes(app: Hono, deps: AppDependencies): void {
         toOpenAiError("invalid_request_error", "invalid_oauth_state", "OAuth state expired"),
         400,
       )
+    }
+
+    const modelValidation = validateConfiguredModels(deps, saved.modelIds)
+    if (modelValidation.kind === "failure") {
+      logOAuthEvent(deps, c.req.raw, c.req.path, "oauth_callback_failed", 400, {
+        errorCode: modelValidation.error.code,
+        unknownModelIds: modelValidation.unknownModelIds,
+      })
+      return c.json({ error: modelValidation.error }, 400)
     }
 
     const exchanged = await deps.oauthAuthorizationClient.exchangeCode({
