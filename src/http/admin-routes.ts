@@ -5,6 +5,7 @@ import { createApiKey } from "../domain/api-key"
 import type { AccountTokenRecord } from "../domain/types"
 import { logAdminEvent, redactAccount, redactApiKey } from "./admin-presenters"
 import { readJson, requireAdmin, toOpenAiError } from "./auth"
+import { validateConfiguredModels } from "./model-validation"
 import { CreateKeyRequestSchema, RegisterAccountRequestSchema } from "./schemas"
 
 export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
@@ -38,6 +39,14 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
         errorCode: "invalid_json",
       })
       return c.json(toOpenAiError("invalid_request_error", "invalid_json", "Invalid key body"), 400)
+    }
+    const modelValidation = validateConfiguredModels(deps, parsed.data.allowedModels)
+    if (modelValidation.kind === "failure") {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_key_create_failed", 400, {
+        errorCode: modelValidation.error.code,
+        unknownModelIds: modelValidation.unknownModelIds,
+      })
+      return c.json({ error: modelValidation.error }, 400)
     }
 
     const created = await createApiKey({
@@ -102,6 +111,14 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
         toOpenAiError("invalid_request_error", "invalid_json", "Invalid account body"),
         400,
       )
+    }
+    const modelValidation = validateConfiguredModels(deps, parsed.data.modelIds)
+    if (modelValidation.kind === "failure") {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_register_failed", 400, {
+        errorCode: modelValidation.error.code,
+        unknownModelIds: modelValidation.unknownModelIds,
+      })
+      return c.json({ error: modelValidation.error }, 400)
     }
 
     const account = {

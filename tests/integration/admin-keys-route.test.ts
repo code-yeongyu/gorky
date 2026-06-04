@@ -50,6 +50,48 @@ describe("admin key routes", () => {
     expect(store.apiKeys[0]?.keyHash).not.toBe(body.plaintextKey)
   })
 
+  it("Given an unknown model When creating a key Then the key is rejected", async () => {
+    // Given
+    const store = createMemoryStore({ accounts: [], apiKeys: [] })
+    const app = createApp({
+      store,
+      adminToken: "dev-admin-token",
+      now: () => 1_780_000_000_000,
+      models: ["grok-build"],
+      upstream: async () => Response.json({ ok: true }),
+      refreshClient: async (): Promise<TokenRefreshResult> => ({
+        kind: "success",
+        accessToken: "unused",
+        refreshToken: null,
+        expiresInSeconds: 21_600,
+      }),
+    })
+
+    // When
+    const response = await app.request("/api/admin/keys", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-admin-token": "dev-admin-token",
+      },
+      body: JSON.stringify({
+        name: "qa-key",
+        allowedModels: ["grok-unknown"],
+      }),
+    })
+    const body = await response.json()
+
+    // Then
+    expect(response.status).toBe(400)
+    expect(body).toMatchObject({
+      error: {
+        type: "invalid_request_error",
+        code: "unknown_model",
+      },
+    })
+    expect(store.apiKeys).toHaveLength(0)
+  })
+
   it("Given admin auth When listing keys Then hashes and plaintext keys are not returned", async () => {
     // Given
     const store = createMemoryStore({ accounts: [], apiKeys: [] })

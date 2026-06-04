@@ -36,7 +36,9 @@ export function createApp(deps: AppDependencies): Hono {
   const cliProxyBaseUrl = deps.cliProxyBaseUrl ?? DEFAULT_CLI_PROXY_BASE_URL
   const publicApiBaseUrl = deps.publicApiBaseUrl ?? DEFAULT_PUBLIC_API_BASE_URL
   const models = deps.models ?? DEFAULT_GROK_MODELS
-  const routeDeps = deps.logger ? { ...deps, logger: createRedactingLogger(deps.logger) } : deps
+  const routeDeps = deps.logger
+    ? { ...deps, logger: createRedactingLogger(deps.logger), models }
+    : { ...deps, models }
 
   app.get("/health", (c) => c.json({ status: "ok", service: "gorky" }))
 
