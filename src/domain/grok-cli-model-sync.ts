@@ -20,6 +20,7 @@ type EmptyGrokModelsDiagnosticInput = {
   readonly cache: GrokModelsCacheSummary
   readonly grokBin: string
   readonly output: string
+  readonly rerunCommand?: string
 }
 
 type GrokBinaryPathInput = {
@@ -88,8 +89,9 @@ export function buildEmptyGrokModelsDiagnostic(input: EmptyGrokModelsDiagnosticI
       : `Grok auth file: missing at ${input.authJsonPath}`,
   )
   lines.push(cacheDiagnosticLine(input.cache))
+  const rerunCommand = input.rerunCommand ?? "pnpm qa:grok-models"
   lines.push(
-    `Next step: run \`${input.grokBin} login --device-auth\`, complete browser authorization, then rerun \`pnpm qa:grok-models\`.`,
+    `Next step: run \`${input.grokBin} login --device-auth\`, complete browser authorization, then rerun \`${rerunCommand}\`.`,
   )
   return lines.join("\n")
 }

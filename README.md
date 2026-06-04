@@ -68,12 +68,14 @@ After authenticating the local Grok CLI, sync every currently available model
 into the Worker config before deploying:
 
 ```bash
-GORKY_GROK_BIN=/Users/yeongyu/.grok/bin/grok pnpm models:sync
+pnpm models:sync
 pnpm exec wrangler deploy
 ```
 
 The sync command refuses to update `wrangler.toml` when `grok models` returns no
-available models, which usually means the CLI is not authenticated yet.
+available models, which usually means the CLI is not authenticated yet. It
+automatically uses `/Users/yeongyu/.grok/bin/grok` when present; set
+`GORKY_GROK_BIN` only when the CLI is installed somewhere else.
 
 ## Local Setup
 
@@ -110,7 +112,7 @@ pnpm typecheck
 pnpm build
 pnpm exec wrangler deploy --dry-run
 pnpm qa:live
-GORKY_GROK_BIN=/Users/yeongyu/.grok/bin/grok pnpm qa:grok-models
+pnpm qa:grok-models
 ```
 
 `pnpm qa:live` checks the deployed Worker health, model catalogs, admin
@@ -122,7 +124,8 @@ token-bearing manual evidence does not enter public commits.
 
 `pnpm qa:grok-models` requires an authenticated local Grok CLI. It compares
 `grok models` with `wrangler.toml` and the deployed `/api/models` catalog so
-every CLI-available model is exposed by Gorky before release.
+every CLI-available model is exposed by Gorky before release. It uses the same
+automatic binary discovery as `pnpm models:sync`.
 
 ## Security Notes
 

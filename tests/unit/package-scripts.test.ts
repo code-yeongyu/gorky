@@ -24,4 +24,29 @@ describe("package scripts", () => {
     expect(rootTypecheck).toContain("pnpm --filter @gorky/web typecheck")
     expect(webTypecheck).toBe("tsc --project tsconfig.json --noEmit")
   })
+
+  it("Given Grok model scripts When inspecting source Then sync and QA share binary resolution", async () => {
+    // Given
+    const syncScript = await readFile("scripts/sync-grok-models.ts", "utf8")
+    const qaScript = await readFile("scripts/qa-grok-models.ts", "utf8")
+
+    // When / Then
+    expect(syncScript).toContain("resolveGrokBinaryPath")
+    expect(syncScript).toContain("COMMON_LOCAL_GROK_BIN_PATH")
+    expect(syncScript).toContain("buildEmptyGrokModelsDiagnostic")
+    expect(qaScript).toContain("resolveGrokBinaryPath")
+    expect(qaScript).toContain("COMMON_LOCAL_GROK_BIN_PATH")
+    expect(qaScript).toContain("buildEmptyGrokModelsDiagnostic")
+  })
+
+  it("Given Grok model commands When reading README Then default commands use automatic binary discovery", async () => {
+    // Given
+    const readme = await readFile("README.md", "utf8")
+
+    // When / Then
+    expect(readme).toContain("pnpm models:sync\npnpm exec wrangler deploy")
+    expect(readme).toContain("pnpm qa:grok-models")
+    expect(readme).not.toContain("GORKY_GROK_BIN=/Users/yeongyu/.grok/bin/grok pnpm models:sync")
+    expect(readme).not.toContain("GORKY_GROK_BIN=/Users/yeongyu/.grok/bin/grok pnpm qa:grok-models")
+  })
 })

@@ -175,6 +175,24 @@ GROK_MODEL_IDS = "grok-composer-2.5-fast"
     expect(message).toContain("/Users/qa/.grok/bin/grok login --device-auth")
   })
 
+  it("Given empty CLI models and a rerun command When building diagnostics Then the command is included", () => {
+    // Given
+    const cache = summarizeGrokModelsCache({ auth_method: "api_key", models: {} })
+
+    // When
+    const message = buildEmptyGrokModelsDiagnostic({
+      authJsonPath: "/Users/qa/.grok/auth.json",
+      authJsonExists: false,
+      cache,
+      grokBin: "/Users/qa/.grok/bin/grok",
+      output: "You are not authenticated.",
+      rerunCommand: "pnpm models:sync",
+    })
+
+    // Then
+    expect(message).toContain("then rerun `pnpm models:sync`")
+  })
+
   it("Given grok binary is missing When building diagnostics Then the setup fix is explained", () => {
     // When
     const message = buildMissingGrokBinaryDiagnostic("grok")
