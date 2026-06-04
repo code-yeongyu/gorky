@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { parseGrokModelIds } from "./models"
 
 const GrokModelsCacheSchema = z.object({
   auth_method: z.string().optional(),
@@ -20,6 +21,11 @@ type EmptyGrokModelsDiagnosticInput = {
   readonly cache: GrokModelsCacheSummary
   readonly grokBin: string
   readonly output: string
+}
+
+export type WranglerModelIdSet = {
+  readonly label: string
+  readonly modelIds: readonly string[]
 }
 
 export function parseGrokCliAvailableModels(output: string): readonly string[] {
@@ -98,4 +104,30 @@ export function updateWranglerModelIds(toml: string, modelIds: readonly string[]
   }
   const nextToml = toml.replace(/^GROK_MODEL_IDS = ".*"$/gm, nextValue)
   return nextToml
+}
+
+export function readWranglerModelIdSets(toml: string): readonly WranglerModelIdSet[] {
+  const modelSets: WranglerModelIdSet[] = []
+  let currentSection = "top-level"
+
+  for (const line of toml.split(/\r?\n/)) {
+    const sectionMatch = line.match(/^\[([^\]]+)\]$/)
+    if (sectionMatch?.[1]) {
+      currentSection = sectionMatch[1]
+      continue
+    }
+
+    const modelIdsMatch = line.match(/^GROK_MODEL_IDS = "([^"]*)"$/)
+    if (modelIdsMatch?.[1] !== undefined) {
+      modelSets.push({
+        label: currentSection,
+        modelIds: parseGrokModelIds(modelIdsMatch[1]),
+      })
+    }
+  }
+
+  if (!modelSets.length) {
+    throw new Error("wrangler.toml is missing GROK_MODEL_IDS")
+  }
+  return modelSets
 }

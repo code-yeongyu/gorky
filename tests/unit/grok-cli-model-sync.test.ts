@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   buildEmptyGrokModelsDiagnostic,
   parseGrokCliAvailableModels,
+  readWranglerModelIdSets,
   summarizeGrokModelsCache,
   updateWranglerModelIds,
 } from "../../src/domain/grok-cli-model-sync"
@@ -105,6 +106,26 @@ GROK_CLIENT_VERSION = "0.2.16"
 
     // Then
     expect(update).toThrow("wrangler.toml is missing GROK_MODEL_IDS")
+  })
+
+  it("Given wrangler config has env model ids When reading model sets Then every env is returned", () => {
+    // Given
+    const config = `
+[vars]
+GROK_MODEL_IDS = "grok-build"
+
+[env.production.vars]
+GROK_MODEL_IDS = "grok-composer-2.5-fast"
+`
+
+    // When
+    const modelSets = readWranglerModelIdSets(config)
+
+    // Then
+    expect(modelSets).toEqual([
+      { label: "vars", modelIds: ["grok-build"] },
+      { label: "env.production.vars", modelIds: ["grok-composer-2.5-fast"] },
+    ])
   })
 
   it("Given empty CLI models and cached ids When building diagnostics Then auth and cache state are explained", () => {

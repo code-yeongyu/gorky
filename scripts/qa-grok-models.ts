@@ -8,9 +8,9 @@ import {
   buildEmptyGrokModelsDiagnostic,
   type GrokModelsCacheSummary,
   parseGrokCliAvailableModels,
+  readWranglerModelIdSets,
   summarizeGrokModelsCache,
 } from "../src/domain/grok-cli-model-sync.ts"
-import { parseGrokModelIds } from "../src/domain/models.ts"
 
 const execFileAsync = promisify(execFile)
 const DEFAULT_BASE_URL = "https://gorky.code-yeon-gyu.workers.dev"
@@ -36,12 +36,18 @@ async function main(): Promise<void> {
   }
 
   const wranglerConfig = await readFile(WRANGLER_CONFIG_PATH, "utf8")
-  const wranglerModels = readWranglerModelIds(wranglerConfig)
+  const wranglerModelSets = readWranglerModelIdSets(wranglerConfig)
   const liveModels = ApiModelsResponseSchema.parse(
     await ky.get(new URL("/api/models", baseUrl)).json(),
   ).models
 
-  assertModelCatalogContains(cliModels, wranglerModels, "wrangler.toml GROK_MODEL_IDS")
+  for (const wranglerModelSet of wranglerModelSets) {
+    assertModelCatalogContains(
+      cliModels,
+      wranglerModelSet.modelIds,
+      `wrangler.toml ${wranglerModelSet.label} GROK_MODEL_IDS`,
+    )
+  }
   assertModelCatalogContains(cliModels, liveModels, "live /api/models")
   console.log(`Grok model parity ok: ${cliModels.join(", ")}`)
 }
@@ -71,14 +77,6 @@ async function readModelsCacheSummary(path: string): Promise<GrokModelsCacheSumm
     }
     throw error
   }
-}
-
-function readWranglerModelIds(toml: string): readonly string[] {
-  const match = toml.match(/^GROK_MODEL_IDS = "([^"]*)"$/m)
-  if (!match) {
-    throw new Error("wrangler.toml is missing GROK_MODEL_IDS")
-  }
-  return parseGrokModelIds(match[1])
 }
 
 try {
