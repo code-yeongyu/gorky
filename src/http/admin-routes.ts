@@ -211,10 +211,7 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
       return auth
     }
 
-    const accountId = c.req.param("id")
-    const account = (await deps.store.listAccounts()).find(
-      (candidate) => candidate.id === accountId,
-    )
+    const account = await deps.store.findAccountById(c.req.param("id"))
     if (!account) {
       logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_refresh_failed", 404, {
         errorCode: "account_not_found",

@@ -19,6 +19,9 @@ export function createMemoryStore(input: MemoryStoreInput): MemoryStore {
     accounts,
     apiKeys,
     listAccounts: async () => accounts,
+    findAccountById: async (accountId) => {
+      return accounts.find((account) => account.id === accountId) ?? null
+    },
     saveAccount: async (account) => {
       accounts.push(account)
     },

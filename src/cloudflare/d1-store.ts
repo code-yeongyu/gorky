@@ -35,6 +35,13 @@ export function createD1Store(db: D1Database, tokenSecret: string): GorkyStore {
       const rows = result.results.map((row) => AccountRowSchema.parse(row))
       return Promise.all(rows.map((row) => accountFromRow(row, tokenSecret)))
     },
+    findAccountById: async (accountId) => {
+      const row = await db.prepare("SELECT * FROM accounts WHERE id = ?").bind(accountId).first()
+      if (!row) {
+        return null
+      }
+      return accountFromRow(AccountRowSchema.parse(row), tokenSecret)
+    },
     saveAccount: async (account) => {
       const encryptedAccessToken = await encryptToken(tokenSecret, account.accessToken)
       const encryptedRefreshToken = await encryptToken(tokenSecret, account.refreshToken)

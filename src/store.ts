@@ -2,6 +2,7 @@ import type { AccountTokenRecord, ApiKeyRecord } from "./domain/types"
 
 export type GorkyStore = {
   readonly listAccounts: () => Promise<readonly AccountTokenRecord[]>
+  readonly findAccountById: (accountId: string) => Promise<AccountTokenRecord | null>
   readonly saveAccount: (account: AccountTokenRecord) => Promise<void>
   readonly saveRefreshedAccount: (account: AccountTokenRecord) => Promise<void>
   readonly disableAccount: (accountId: string) => Promise<AccountTokenRecord | null>
