@@ -227,7 +227,7 @@ describe("live QA contracts", () => {
   it("Given a service worker script bypasses API routes When checking the script Then the QA check passes", () => {
     // Given
     const script = `
-      const API_PATH_PREFIXES = ["/api/", "/v1/"]
+      const API_PATH_PREFIXES = ["/api/", "/v1/", "/__qa/"]
       const API_PATHS = ["/health"]
       function isApiRequest(url) {
         return API_PATHS.includes(url.pathname) ||

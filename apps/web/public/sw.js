@@ -1,6 +1,6 @@
 const CACHE_NAME = "gorky-shell-v1"
 const SHELL_ASSETS = ["/", "/manifest.webmanifest", "/favicon.svg", "/og.svg"]
-const API_PATH_PREFIXES = ["/api/", "/v1/"]
+const API_PATH_PREFIXES = ["/api/", "/v1/", "/__qa/"]
 const API_PATHS = ["/health"]
 
 self.addEventListener("install", (event) => {

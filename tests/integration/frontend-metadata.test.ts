@@ -26,6 +26,7 @@ describe("frontend metadata", () => {
     expect(serviceWorker).toContain("isApiRequest")
     expect(serviceWorker).toContain('"/api/"')
     expect(serviceWorker).toContain('"/v1/"')
+    expect(serviceWorker).toContain('"/__qa/"')
     expect(serviceWorker).toContain('"/health"')
     expect(headers).toContain("Content-Security-Policy:")
     expect(headers).toContain("worker-src 'self'")

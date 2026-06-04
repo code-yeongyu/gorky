@@ -95,6 +95,7 @@ const SERVICE_WORKER_REQUIRED_FRAGMENTS = [
   "isApiRequest",
   '"/api/"',
   '"/v1/"',
+  '"/__qa/"',
   '"/health"',
 ] as const
 
