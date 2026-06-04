@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const ChatCompletionRequestSchema = z.object({
+export const ChatCompletionRequestSchema = z.looseObject({
   model: z.string().min(1),
   messages: z.array(
     z.object({

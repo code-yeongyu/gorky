@@ -56,6 +56,8 @@ describe("chat completions route", () => {
         model: "grok-composer-2.5-fast",
         messages: [{ role: "user", content: "ping" }],
         max_tokens: 8,
+        temperature: 0.2,
+        stream: false,
       }),
     })
 
@@ -68,6 +70,8 @@ describe("chat completions route", () => {
     expect(captures[0]?.headers.get("x-grok-client-version")).toBe("0.2.16")
     expect(captures[0]?.headers.get("x-grok-model-override")).toBe("grok-composer-2.5-fast")
     expect(captures[0]?.body).toContain("grok-composer-2.5-fast")
+    expect(captures[0]?.body).toContain('"temperature":0.2')
+    expect(captures[0]?.body).toContain('"stream":false')
   })
 
   it("Given refresh fails When chat completions is called Then caller receives upstream auth api error", async () => {
