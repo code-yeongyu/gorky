@@ -13,7 +13,7 @@ export type PreparedProxyAccount = {
 type ForwardFailure = {
   readonly kind: "failure"
   readonly error: ApiError
-  readonly status: 502
+  readonly status: 429 | 502
   readonly keyPrefix: string
 }
 
@@ -38,6 +38,9 @@ export async function forwardWithAuthRetry(input: {
   )
   if (firstResponse.kind === "failure") {
     return firstResponse
+  }
+  if (isUpstreamRateLimit(firstResponse.response.status)) {
+    return upstreamRateLimitFailure(input.prepared.keyPrefix)
   }
   if (isUpstreamServerFailure(firstResponse.response.status)) {
     return upstreamResponseFailure(input.prepared.keyPrefix)
@@ -83,6 +86,9 @@ export async function forwardWithAuthRetry(input: {
   if (retryResponse.kind === "failure") {
     return retryResponse
   }
+  if (isUpstreamRateLimit(retryResponse.response.status)) {
+    return upstreamRateLimitFailure(input.prepared.keyPrefix)
+  }
   if (isUpstreamServerFailure(retryResponse.response.status)) {
     return upstreamResponseFailure(input.prepared.keyPrefix)
   }
@@ -99,6 +105,19 @@ export async function forwardWithAuthRetry(input: {
     }
   }
   return { kind: "success", response: retryResponse.response, account: refreshed.account }
+}
+
+function upstreamRateLimitFailure(keyPrefix: string): ForwardFailure {
+  return {
+    kind: "failure",
+    status: 429,
+    keyPrefix,
+    error: toOpenAiError(
+      "rate_limit_error",
+      "upstream_rate_limited",
+      "Grok upstream rate limited the request",
+    ).error,
+  }
 }
 
 function upstreamResponseFailure(keyPrefix: string): ForwardFailure {
@@ -140,6 +159,10 @@ async function callUpstream(
 
 function isUpstreamAuthFailure(status: number): boolean {
   return status === 401 || status === 403
+}
+
+function isUpstreamRateLimit(status: number): boolean {
+  return status === 429
 }
 
 function isUpstreamServerFailure(status: number): boolean {
