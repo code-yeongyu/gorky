@@ -10,7 +10,14 @@ import {
   requestJson,
   revokeKey,
 } from "./api"
-import { AccountList, KeyForm, KeyList, ManualAccountForm, OAuthForm } from "./components"
+import {
+  AccountList,
+  DashboardMetrics,
+  KeyForm,
+  KeyList,
+  ManualAccountForm,
+  OAuthForm,
+} from "./components"
 import { messageFromError, stringField } from "./form-utils"
 
 type Notice = { readonly kind: "success" | "error" | "info"; readonly message: string }
@@ -200,20 +207,11 @@ export function App(): React.ReactElement {
           {notice.message}
         </p>
 
-        <section className="metrics" aria-label="Service metrics">
-          <article>
-            <span>Active accounts</span>
-            <strong>{activeAccounts}</strong>
-          </article>
-          <article>
-            <span>Known models</span>
-            <strong>{modelOptions.length}</strong>
-          </article>
-          <article>
-            <span>Custom keys</span>
-            <strong>{activeKeys}</strong>
-          </article>
-        </section>
+        <DashboardMetrics
+          activeAccounts={activeAccounts}
+          knownModels={modelOptions.length}
+          activeKeys={activeKeys}
+        />
 
         <section className="dashboard-grid">
           <section className="panel" id="accounts" aria-label="Registered accounts">

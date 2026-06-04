@@ -1,6 +1,29 @@
 import type { FormEvent } from "react"
 import type { AccountRow, ApiKeyRow } from "./api"
 
+export function DashboardMetrics(props: {
+  readonly activeAccounts: number
+  readonly knownModels: number
+  readonly activeKeys: number
+}): React.ReactElement {
+  return (
+    <section className="metrics" aria-label="Service metrics">
+      <article>
+        <span>Active accounts</span>
+        <strong>{props.activeAccounts}</strong>
+      </article>
+      <article>
+        <span>Known models</span>
+        <strong>{props.knownModels}</strong>
+      </article>
+      <article>
+        <span>Custom keys</span>
+        <strong>{props.activeKeys}</strong>
+      </article>
+    </section>
+  )
+}
+
 export function AccountList(props: {
   readonly accounts: readonly AccountRow[]
   readonly isBusy: boolean
