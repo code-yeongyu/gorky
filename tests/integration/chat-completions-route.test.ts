@@ -105,7 +105,7 @@ describe("chat completions route", () => {
       refreshClient: async (): Promise<TokenRefreshResult> => ({
         kind: "failure",
         errorCode: "invalid_grant",
-        message: "Refresh token rejected",
+        message: "Refresh token rejected: Bearer SENSITIVE_ACCESS_SENTINEL",
       }),
     })
 
@@ -122,6 +122,7 @@ describe("chat completions route", () => {
       }),
     })
     const body = await response.json()
+    const bodyText = JSON.stringify(body)
     const logText = JSON.stringify(logs)
 
     // Then
@@ -135,6 +136,8 @@ describe("chat completions route", () => {
     expect(logText).toContain("proxy_request_failed")
     expect(logText).toContain("invalid_grant")
     expect(logText).toContain(apiKey.record.keyPrefix)
+    expect(bodyText).not.toContain("SENSITIVE_ACCESS_SENTINEL")
+    expect(logText).not.toContain("SENSITIVE_ACCESS_SENTINEL")
     expect(logText).not.toContain(apiKey.plaintextKey)
     expect(logText).not.toContain("must-remain")
     expect(store.accounts[0]?.refreshToken).toBe("must-remain")

@@ -34,6 +34,7 @@ describe("redactSensitiveData", () => {
       keyPrefix: "gorky_123456",
       model: "grok-build",
       nested: ["created key gorky_secret_plaintext"],
+      url: "https://auth.x.ai/token?refresh_token=SENSITIVE_REFRESH_SENTINEL",
     }
 
     // When
@@ -45,6 +46,7 @@ describe("redactSensitiveData", () => {
     expect(text).toContain("gorky_123456")
     expect(text).toContain("grok-build")
     expect(text).not.toContain("SENSITIVE_ACCESS_SENTINEL")
+    expect(text).not.toContain("SENSITIVE_REFRESH_SENTINEL")
     expect(text).not.toContain("gorky_secret_plaintext")
   })
 })

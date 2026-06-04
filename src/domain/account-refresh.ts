@@ -1,3 +1,4 @@
+import { redactSensitiveData } from "../lib/redaction"
 import type {
   AccountTokenRecord,
   FreshAccountResult,
@@ -48,9 +49,14 @@ export async function ensureFreshAccountToken(
         error: {
           type: "grok_refresh_error",
           code: refresh.errorCode,
-          message: refresh.message,
+          message: redactRefreshMessage(refresh.message),
         },
       }
     }
   }
+}
+
+function redactRefreshMessage(message: string): string {
+  const redacted = redactSensitiveData(message)
+  return typeof redacted === "string" ? redacted : "Grok refresh failed"
 }

@@ -111,7 +111,7 @@ describe("ensureFreshAccountToken", () => {
       refresh: async () => ({
         kind: "failure",
         errorCode: "invalid_grant",
-        message: "Refresh token is invalid",
+        message: "Refresh token is invalid: Bearer SENSITIVE_ACCESS_SENTINEL",
       }),
     }
 
@@ -130,6 +130,8 @@ describe("ensureFreshAccountToken", () => {
     }
     expect(result.error.type).toBe("grok_refresh_error")
     expect(result.error.code).toBe("invalid_grant")
+    expect(result.error.message).toContain("[REDACTED]")
+    expect(result.error.message).not.toContain("SENSITIVE_ACCESS_SENTINEL")
     expect(writes).toHaveLength(1)
     expect(writes[0]).toMatchObject({
       accessToken: "old-access",
