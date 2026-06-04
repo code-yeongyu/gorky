@@ -179,7 +179,7 @@ describe("live QA contracts", () => {
   it("Given security headers are complete When checking headers Then the QA check passes", () => {
     // Given
     const headers = new Headers({
-      "content-security-policy": "default-src 'self'; frame-ancestors 'none'",
+      "content-security-policy": "default-src 'self'; frame-ancestors 'none'; object-src 'none'",
       "permissions-policy": "camera=(), microphone=(), geolocation=()",
       "referrer-policy": "no-referrer",
       "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
@@ -194,9 +194,9 @@ describe("live QA contracts", () => {
   it("Given a security header is missing When checking headers Then the QA check fails", () => {
     // Given
     const headers = new Headers({
-      "content-security-policy": "default-src 'self'; frame-ancestors 'none'",
-      "permissions-policy": "camera=()",
-      "strict-transport-security": "max-age=31536000",
+      "content-security-policy": "default-src 'self'; frame-ancestors 'none'; object-src 'none'",
+      "permissions-policy": "camera=(), microphone=(), geolocation=()",
+      "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
       "x-content-type-options": "nosniff",
       "x-frame-options": "DENY",
     })
@@ -204,6 +204,40 @@ describe("live QA contracts", () => {
     // When / Then
     expect(() => assertSecurityHeaders(headers, "health")).toThrow(
       "Missing health security header: referrer-policy",
+    )
+  })
+
+  it("Given content security policy is weak When checking headers Then the QA check fails", () => {
+    // Given
+    const headers = new Headers({
+      "content-security-policy": "default-src 'self'",
+      "permissions-policy": "camera=(), microphone=(), geolocation=()",
+      "referrer-policy": "no-referrer",
+      "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+    })
+
+    // When / Then
+    expect(() => assertSecurityHeaders(headers, "dashboard")).toThrow(
+      "Weak dashboard security header: content-security-policy",
+    )
+  })
+
+  it("Given HSTS is incomplete When checking headers Then the QA check fails", () => {
+    // Given
+    const headers = new Headers({
+      "content-security-policy": "default-src 'self'; frame-ancestors 'none'; object-src 'none'",
+      "permissions-policy": "camera=(), microphone=(), geolocation=()",
+      "referrer-policy": "no-referrer",
+      "strict-transport-security": "max-age=31536000",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+    })
+
+    // When / Then
+    expect(() => assertSecurityHeaders(headers, "models")).toThrow(
+      "Weak models security header: strict-transport-security",
     )
   })
 })

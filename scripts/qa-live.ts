@@ -59,8 +59,8 @@ async function runHttpChecks(baseUrl: URL): Promise<void> {
   const healthResponse = await ky.get(new URL("/health", baseUrl))
   const health = HealthResponseSchema.parse(await healthResponse.json())
   assertSecurityHeaders(healthResponse.headers, "health")
-  const apiModels = await getJson(new URL("/api/models", baseUrl), ApiModelsResponseSchema)
-  const v1Models = await getJson(new URL("/v1/models", baseUrl), V1ModelsResponseSchema)
+  const apiModels = await getJson(new URL("/api/models", baseUrl), ApiModelsResponseSchema, "api models")
+  const v1Models = await getJson(new URL("/v1/models", baseUrl), V1ModelsResponseSchema, "v1 models")
   assertMatchingModelCatalog(apiModels, v1Models)
 
   for (const request of ADMIN_PROTECTED_REQUESTS) {
@@ -68,12 +68,17 @@ async function runHttpChecks(baseUrl: URL): Promise<void> {
       method: request.method,
       throwHttpErrors: false,
     })
+    assertSecurityHeaders(response.headers, request.label)
     assertAdminProtectionResponse(response.status, await response.json(), request.label)
   }
 
   await runAdminErrorChecks(baseUrl)
 
-  const manifest = await getJson(new URL("/manifest.webmanifest", baseUrl), ManifestResponseSchema)
+  const manifest = await getJson(
+    new URL("/manifest.webmanifest", baseUrl),
+    ManifestResponseSchema,
+    "manifest",
+  )
   for (const icon of manifest.icons) {
     await verifyPublicAsset(baseUrl, icon.src, "manifest icon")
   }
@@ -104,8 +109,11 @@ async function runAdminErrorChecks(baseUrl: URL): Promise<void> {
 async function getJson<TSchema extends z.ZodType>(
   url: URL,
   schema: TSchema,
+  label: string,
 ): Promise<z.infer<TSchema>> {
-  const body = await ky.get(url).json()
+  const response = await ky.get(url)
+  assertSecurityHeaders(response.headers, label)
+  const body = await response.json()
   return schema.parse(body)
 }
 
@@ -138,7 +146,11 @@ async function verifyDashboardPage(
     consoleMessages.push(error.message)
   })
 
-  await page.goto(baseUrl.href, { waitUntil: "networkidle" })
+  const response = await page.goto(baseUrl.href, { waitUntil: "networkidle" })
+  if (!response) {
+    throw new Error(`No dashboard response for ${viewport.name}`)
+  }
+  assertSecurityHeaders(new Headers(response.headers()), `${viewport.name} dashboard`)
   await page.waitForSelector("text=Account health and token sets")
   await page.waitForSelector("text=Known models")
   const openGraphMetadata = {
@@ -186,6 +198,7 @@ async function verifyPublicAsset(
   label: string,
 ): Promise<void> {
   const response = await ky.get(new URL(assetPath ?? "", baseUrl), { throwHttpErrors: false })
+  assertSecurityHeaders(response.headers, label)
   assertPublicAssetResponse({
     status: response.status,
     contentType: response.headers.get("content-type"),

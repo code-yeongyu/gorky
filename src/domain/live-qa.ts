@@ -60,12 +60,30 @@ export type PublicAssetResponse = {
 }
 
 const REQUIRED_SECURITY_HEADERS = [
-  "content-security-policy",
-  "permissions-policy",
-  "referrer-policy",
-  "strict-transport-security",
-  "x-content-type-options",
-  "x-frame-options",
+  {
+    name: "content-security-policy",
+    requiredValues: ["default-src 'self'", "frame-ancestors 'none'", "object-src 'none'"],
+  },
+  {
+    name: "permissions-policy",
+    requiredValues: ["camera=()", "microphone=()", "geolocation=()"],
+  },
+  {
+    name: "referrer-policy",
+    requiredValues: ["no-referrer"],
+  },
+  {
+    name: "strict-transport-security",
+    requiredValues: ["max-age=31536000", "includeSubDomains", "preload"],
+  },
+  {
+    name: "x-content-type-options",
+    requiredValues: ["nosniff"],
+  },
+  {
+    name: "x-frame-options",
+    requiredValues: ["DENY"],
+  },
 ] as const
 
 export function assertMatchingModelCatalog(
@@ -118,8 +136,12 @@ export function assertPublicAssetResponse(response: PublicAssetResponse): void {
 
 export function assertSecurityHeaders(headers: Headers, label: string): void {
   for (const header of REQUIRED_SECURITY_HEADERS) {
-    if (!headers.get(header)?.trim()) {
-      throw new Error(`Missing ${label} security header: ${header}`)
+    const value = headers.get(header.name)
+    if (!value?.trim()) {
+      throw new Error(`Missing ${label} security header: ${header.name}`)
+    }
+    if (!header.requiredValues.every((requiredValue) => value.includes(requiredValue))) {
+      throw new Error(`Weak ${label} security header: ${header.name}`)
     }
   }
 }
