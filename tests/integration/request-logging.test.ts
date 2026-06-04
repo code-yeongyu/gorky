@@ -22,6 +22,7 @@ describe("request logging", () => {
         logs.push(event)
       },
       upstream: async () => Response.json({ ok: true }),
+      qaMode: true,
       refreshClient: async (): Promise<TokenRefreshResult> => ({
         kind: "success",
         accessToken: "unused",
@@ -42,6 +43,7 @@ describe("request logging", () => {
 
     // Then
     expect(response.status).toBe(200)
+    expect(response.headers.get("cache-control")).toBe("no-store")
     expect(body).toContain("[REDACTED]")
     expect(logText).toContain(apiKey.record.keyPrefix)
     expect(logText).not.toContain(apiKey.plaintextKey)

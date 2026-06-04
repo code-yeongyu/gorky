@@ -52,4 +52,32 @@ describe("security headers", () => {
     // Then
     expect(response.headers.get("cache-control")).toBe("no-store")
   })
+
+  it("Given QA mode is disabled When a QA route is requested Then it is not exposed", async () => {
+    // Given
+    const app = createApp({
+      store: createMemoryStore({ accounts: [], apiKeys: [] }),
+      adminToken: "dev-admin-token",
+      now: () => 1_780_000_000_000,
+      upstream: async () => Response.json({ ok: true }),
+      refreshClient: async (): Promise<TokenRefreshResult> => ({
+        kind: "success",
+        accessToken: "unused",
+        refreshToken: null,
+        expiresInSeconds: 21_600,
+      }),
+    })
+
+    // When
+    const response = await app.request("/__qa/redaction", {
+      headers: {
+        Authorization: "Bearer SENSITIVE_QA_SENTINEL",
+      },
+    })
+    const text = await response.text()
+
+    // Then
+    expect(response.status).toBe(404)
+    expect(text).not.toContain("SENSITIVE_QA_SENTINEL")
+  })
 })

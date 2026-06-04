@@ -123,6 +123,12 @@ export function assertOAuthUnknownModelResponse(status: number, body: unknown): 
   OAuthUnknownModelResponseSchema.parse(body)
 }
 
+export function assertQaRouteClosed(status: number): void {
+  if (status !== 404) {
+    throw new Error(`Expected QA route to stay closed, got ${status}`)
+  }
+}
+
 export function assertOpenGraphMetadata(metadata: OpenGraphMetadata): void {
   const requiredEntries = [
     ["title", metadata.title],

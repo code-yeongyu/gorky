@@ -9,6 +9,7 @@ import {
   assertOpenGraphMetadata,
   assertPublicAssetResponse,
   assertPublicScriptResponse,
+  assertQaRouteClosed,
   assertSecurityHeaders,
   assertServiceWorkerScript,
   ManifestResponseSchema,
@@ -98,6 +99,11 @@ describe("live QA contracts", () => {
     expect(() => assertAdminProtectionResponse(200, body, "list accounts")).toThrow(
       "Expected list accounts admin protection to return 401, got 200",
     )
+  })
+
+  it("Given a QA route is exposed When checking live behavior Then the QA check fails", () => {
+    expect(() => assertQaRouteClosed(404)).not.toThrow()
+    expect(() => assertQaRouteClosed(200)).toThrow("Expected QA route to stay closed, got 200")
   })
 
   it("Given OAuth rejects an unknown model When checking live behavior Then the QA check passes", () => {

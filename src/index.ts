@@ -29,6 +29,7 @@ export default {
       oauthClientId: env.OIDC_CLIENT_ID,
       oauthStateStore: createKvOAuthStateStore(env.LOGIN_STATE),
       oauthAuthorizationClient: authorizationClient,
+      qaMode: env.GORKY_QA_MODE === "true",
       logger: (event) => {
         executionContext.waitUntil(Promise.resolve(console.log(JSON.stringify(event))))
       },

@@ -10,7 +10,7 @@ const SECURITY_HEADERS = {
   "x-frame-options": "DENY",
 } as const
 
-const NO_STORE_PATH_PREFIXES = ["/api/", "/v1/"] as const
+const NO_STORE_PATH_PREFIXES = ["/api/", "/v1/", "/__qa/"] as const
 
 export function registerSecurityHeaders(app: Hono): void {
   app.use("*", async (c, next) => {

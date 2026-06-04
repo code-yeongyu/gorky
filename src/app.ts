@@ -29,6 +29,7 @@ export type AppDependencies = {
   readonly oauthClientId?: string
   readonly oauthStateStore?: import("./domain/oauth").OAuthStateStore
   readonly oauthAuthorizationClient?: import("./domain/oauth").OAuthAuthorizationClient
+  readonly qaMode?: boolean
 }
 
 export function createApp(deps: AppDependencies): Hono {
@@ -58,27 +59,29 @@ export function createApp(deps: AppDependencies): Hono {
     }),
   )
 
-  app.get("/__qa/redaction", (c) => {
-    const requestId = getRequestId(c.req.raw.headers)
-    const apiKey = extractApiKey(c.req.raw.headers)
-    const keyPrefix = apiKey?.slice(0, 12)
-    const loggerEvent: LoggerEvent = {
-      event: "qa_redaction",
-      requestId,
-      path: c.req.path,
-      method: c.req.method,
-      metadata: redactSensitiveData(Object.fromEntries(c.req.raw.headers.entries())),
-    }
-    routeDeps.logger?.(keyPrefix ? { ...loggerEvent, keyPrefix } : loggerEvent)
-    return c.json(
-      redactSensitiveData({
+  if (deps.qaMode === true) {
+    app.get("/__qa/redaction", (c) => {
+      const requestId = getRequestId(c.req.raw.headers)
+      const apiKey = extractApiKey(c.req.raw.headers)
+      const keyPrefix = apiKey?.slice(0, 12)
+      const loggerEvent: LoggerEvent = {
+        event: "qa_redaction",
         requestId,
-        headers: Object.fromEntries(c.req.raw.headers.entries()),
-        access_token: "qa-access-token",
-        refresh_token: "qa-refresh-token",
-      }),
-    )
-  })
+        path: c.req.path,
+        method: c.req.method,
+        metadata: redactSensitiveData(Object.fromEntries(c.req.raw.headers.entries())),
+      }
+      routeDeps.logger?.(keyPrefix ? { ...loggerEvent, keyPrefix } : loggerEvent)
+      return c.json(
+        redactSensitiveData({
+          requestId,
+          headers: Object.fromEntries(c.req.raw.headers.entries()),
+          access_token: "qa-access-token",
+          refresh_token: "qa-refresh-token",
+        }),
+      )
+    })
+  }
 
   registerAdminRoutes(app, routeDeps)
   registerOAuthRoutes(app, routeDeps)

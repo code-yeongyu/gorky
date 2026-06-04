@@ -15,6 +15,7 @@ import {
   assertOAuthUnknownModelResponse,
   assertPublicAssetResponse,
   assertPublicScriptResponse,
+  assertQaRouteClosed,
   assertSecurityHeaders,
   assertServiceWorkerScript,
 } from "../src/domain/live-qa.ts"
@@ -79,6 +80,12 @@ async function runHttpChecks(baseUrl: URL): Promise<void> {
   }
 
   await runAdminErrorChecks(baseUrl)
+  const qaResponse = await ky.get(new URL("/__qa/redaction", baseUrl), {
+    throwHttpErrors: false,
+  })
+  assertSecurityHeaders(qaResponse.headers, "QA redaction")
+  assertNoStoreHeader(qaResponse.headers, "QA redaction")
+  assertQaRouteClosed(qaResponse.status)
 
   const manifest = await getJson(
     new URL("/manifest.webmanifest", baseUrl),
