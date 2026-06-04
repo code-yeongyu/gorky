@@ -9,7 +9,7 @@ The first supported upstreams are the Grok CLI chat proxy and the public xAI API
 - Cloudflare Workers + Hono API
 - D1-backed account and custom key storage
 - AES-GCM encrypted OAuth access/refresh token columns
-- Admin account disable controls for routing pool safety
+- Admin account disable/enable controls for routing pool safety
 - Refresh-token rotation with structured API errors on failure
 - One retry with forced refresh when upstream rejects a session token
 - OpenAI-style `/v1/chat/completions` proxying
@@ -25,6 +25,7 @@ The first supported upstreams are the Grok CLI chat proxy and the public xAI API
 ```http
 POST /api/admin/accounts
 POST /api/admin/accounts/{id}/disable
+POST /api/admin/accounts/{id}/enable
 POST /api/admin/oauth/start
 POST /api/admin/keys
 POST /api/admin/keys/{id}/revoke

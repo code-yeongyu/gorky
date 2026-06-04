@@ -175,6 +175,32 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
     })
     return c.json({ account: redactAccount(account) })
   })
+
+  app.post("/api/admin/accounts/:id/enable", async (c) => {
+    const auth = requireAdmin(c.req.raw.headers, deps.adminToken)
+    if (auth) {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_auth_failed", 401)
+      return auth
+    }
+
+    const account = await deps.store.enableAccount(c.req.param("id"))
+    if (!account) {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_enable_failed", 404, {
+        errorCode: "account_not_found",
+      })
+      return c.json(
+        toOpenAiError("invalid_request_error", "account_not_found", "Account not found"),
+        404,
+      )
+    }
+
+    logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_enabled", 200, {
+      accountId: account.id,
+      modelIds: account.modelIds,
+      status: account.status,
+    })
+    return c.json({ account: redactAccount(account) })
+  })
 }
 
 function redactAccount(account: AccountTokenRecord) {

@@ -1,9 +1,10 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   type AccountRow,
   type ApiKeyRow,
   type CreateKeyResponse,
   disableAccount,
+  enableAccount,
   fetchAccounts,
   fetchKeys,
   fetchModels,
@@ -18,7 +19,7 @@ import {
   ManualAccountForm,
   OAuthForm,
 } from "./components"
-import { messageFromError, stringField } from "./form-utils"
+import { type FormSubmitEvent, messageFromError, stringField } from "./form-utils"
 
 type Notice = { readonly kind: "success" | "error" | "info"; readonly message: string }
 
@@ -66,13 +67,13 @@ export function App(): React.ReactElement {
     }
   }
 
-  async function saveAdminToken(event: FormEvent<HTMLFormElement>): Promise<void> {
+  async function saveAdminToken(event: FormSubmitEvent): Promise<void> {
     event.preventDefault()
     sessionStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, adminToken)
     await refreshDashboard(adminToken)
   }
 
-  async function startOAuth(event: FormEvent<HTMLFormElement>): Promise<void> {
+  async function startOAuth(event: FormSubmitEvent): Promise<void> {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     const redirectUri =
@@ -96,7 +97,7 @@ export function App(): React.ReactElement {
     }
   }
 
-  async function createKey(event: FormEvent<HTMLFormElement>): Promise<void> {
+  async function createKey(event: FormSubmitEvent): Promise<void> {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     try {
@@ -119,12 +120,16 @@ export function App(): React.ReactElement {
     }
   }
 
-  async function disableRegisteredAccount(accountId: string): Promise<void> {
+  async function setRegisteredAccountStatus(
+    accountId: string,
+    nextStatus: "active" | "disabled",
+  ): Promise<void> {
+    const action = nextStatus === "active" ? enableAccount : disableAccount
     try {
       setIsLoading(true)
-      await disableAccount(adminToken, accountId)
+      await action(adminToken, accountId)
       await refreshDashboard()
-      setNotice({ kind: "success", message: "Account disabled." })
+      setNotice({ kind: "success", message: `Account ${nextStatus}.` })
     } catch (error) {
       setNotice({ kind: "error", message: messageFromError(error) })
     } finally {
@@ -145,7 +150,7 @@ export function App(): React.ReactElement {
     }
   }
 
-  async function registerManualAccount(event: FormEvent<HTMLFormElement>): Promise<void> {
+  async function registerManualAccount(event: FormSubmitEvent): Promise<void> {
     event.preventDefault()
     const formElement = event.currentTarget
     const form = new FormData(formElement)
@@ -228,7 +233,8 @@ export function App(): React.ReactElement {
             <AccountList
               accounts={accounts}
               isBusy={isLoading}
-              onDisable={disableRegisteredAccount}
+              onDisable={(accountId) => setRegisteredAccountStatus(accountId, "disabled")}
+              onEnable={(accountId) => setRegisteredAccountStatus(accountId, "active")}
             />
           </section>
 

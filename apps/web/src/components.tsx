@@ -1,5 +1,5 @@
-import type { FormEvent } from "react"
 import type { AccountRow, ApiKeyRow } from "./api"
+import type { FormSubmitEvent } from "./form-utils"
 
 export function DashboardMetrics(props: {
   readonly activeAccounts: number
@@ -28,6 +28,7 @@ export function AccountList(props: {
   readonly accounts: readonly AccountRow[]
   readonly isBusy: boolean
   readonly onDisable: (accountId: string) => void
+  readonly onEnable: (accountId: string) => void
 }): React.ReactElement {
   if (!props.accounts.length) {
     return <p className="empty-state">No accounts loaded yet.</p>
@@ -50,11 +51,15 @@ export function AccountList(props: {
             </span>
             <button
               type="button"
-              className="button-danger"
-              disabled={props.isBusy || account.status !== "active"}
-              onClick={() => props.onDisable(account.id)}
+              className={account.status === "disabled" ? undefined : "button-danger"}
+              disabled={props.isBusy || !["active", "disabled"].includes(account.status)}
+              onClick={() =>
+                account.status === "disabled"
+                  ? props.onEnable(account.id)
+                  : props.onDisable(account.id)
+              }
             >
-              Disable
+              {account.status === "disabled" ? "Enable" : "Disable"}
             </button>
           </div>
         </article>
@@ -106,7 +111,7 @@ export function KeyList(props: {
 
 export function OAuthForm(props: {
   readonly models: readonly string[]
-  readonly onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  readonly onSubmit: (event: FormSubmitEvent) => void
 }): React.ReactElement {
   return (
     <form className="form-stack" onSubmit={props.onSubmit}>
@@ -123,7 +128,7 @@ export function OAuthForm(props: {
 
 export function ManualAccountForm(props: {
   readonly models: readonly string[]
-  readonly onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  readonly onSubmit: (event: FormSubmitEvent) => void
 }): React.ReactElement {
   return (
     <form className="form-stack" onSubmit={props.onSubmit}>
@@ -158,7 +163,7 @@ export function ManualAccountForm(props: {
 
 export function KeyForm(props: {
   readonly models: readonly string[]
-  readonly onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  readonly onSubmit: (event: FormSubmitEvent) => void
 }): React.ReactElement {
   return (
     <form className="form-stack" onSubmit={props.onSubmit}>

@@ -40,6 +40,16 @@ export function createMemoryStore(input: MemoryStoreInput): MemoryStore {
       accounts.splice(index, 1, disabled)
       return disabled
     },
+    enableAccount: async (accountId) => {
+      const index = accounts.findIndex((candidate) => candidate.id === accountId)
+      const account = accounts[index]
+      if (!account) {
+        return null
+      }
+      const enabled = { ...account, status: "active" as const }
+      accounts.splice(index, 1, enabled)
+      return enabled
+    },
     saveApiKey: async (record) => {
       apiKeys.push(record)
     },
