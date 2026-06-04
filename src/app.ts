@@ -3,7 +3,7 @@ import { DEFAULT_GROK_MODELS } from "./domain/models"
 import type { TokenRefreshResult } from "./domain/types"
 import { registerAdminRoutes } from "./http/admin-routes"
 import { extractApiKey, getRequestId } from "./http/auth"
-import type { LoggerEvent } from "./http/logging"
+import { createRedactingLogger, type LoggerEvent } from "./http/logging"
 import { registerOAuthRoutes } from "./http/oauth-routes"
 import { registerProxyRoutes } from "./http/proxy-routes"
 import { redactSensitiveData } from "./lib/redaction"
@@ -36,6 +36,7 @@ export function createApp(deps: AppDependencies): Hono {
   const cliProxyBaseUrl = deps.cliProxyBaseUrl ?? DEFAULT_CLI_PROXY_BASE_URL
   const publicApiBaseUrl = deps.publicApiBaseUrl ?? DEFAULT_PUBLIC_API_BASE_URL
   const models = deps.models ?? DEFAULT_GROK_MODELS
+  const routeDeps = deps.logger ? { ...deps, logger: createRedactingLogger(deps.logger) } : deps
 
   app.get("/health", (c) => c.json({ status: "ok", service: "gorky" }))
 
@@ -63,7 +64,7 @@ export function createApp(deps: AppDependencies): Hono {
       method: c.req.method,
       metadata: redactSensitiveData(Object.fromEntries(c.req.raw.headers.entries())),
     }
-    deps.logger?.(keyPrefix ? { ...loggerEvent, keyPrefix } : loggerEvent)
+    routeDeps.logger?.(keyPrefix ? { ...loggerEvent, keyPrefix } : loggerEvent)
     return c.json(
       redactSensitiveData({
         requestId,
@@ -74,9 +75,9 @@ export function createApp(deps: AppDependencies): Hono {
     )
   })
 
-  registerAdminRoutes(app, deps)
-  registerOAuthRoutes(app, deps)
-  registerProxyRoutes(app, deps, { cliProxyBaseUrl, grokClientVersion, publicApiBaseUrl })
+  registerAdminRoutes(app, routeDeps)
+  registerOAuthRoutes(app, routeDeps)
+  registerProxyRoutes(app, routeDeps, { cliProxyBaseUrl, grokClientVersion, publicApiBaseUrl })
 
   return app
 }
