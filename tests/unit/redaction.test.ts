@@ -72,4 +72,25 @@ describe("redactSensitiveData", () => {
     expect(text).not.toContain("SENSITIVE_CLIENT_SECRET")
     expect(text).not.toContain("SENSITIVE_PASSWORD_SENTINEL")
   })
+
+  it("Given cookie credentials When redaction runs Then cookie values are sanitized", () => {
+    // Given
+    const input = {
+      headers: {
+        cookie: "gorky_session=SENSITIVE_COOKIE_SENTINEL; theme=dark",
+        "set-cookie": "xai_session=SENSITIVE_SET_COOKIE_SENTINEL; HttpOnly",
+      },
+      message: "Cookie: sid=SENSITIVE_INLINE_COOKIE_SENTINEL",
+    }
+
+    // When
+    const redacted = redactSensitiveData(input)
+    const text = JSON.stringify(redacted)
+
+    // Then
+    expect(text).toContain("[REDACTED]")
+    expect(text).not.toContain("SENSITIVE_COOKIE_SENTINEL")
+    expect(text).not.toContain("SENSITIVE_SET_COOKIE_SENTINEL")
+    expect(text).not.toContain("SENSITIVE_INLINE_COOKIE_SENTINEL")
+  })
 })

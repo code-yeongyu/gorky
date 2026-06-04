@@ -1,5 +1,8 @@
 const SENSITIVE_KEYS = new Set([
   "authorization",
+  "cookie",
+  "set-cookie",
+  "set-cookie2",
   "x-api-key",
   "x-admin-token",
   "access_token",
@@ -17,6 +20,7 @@ const SENSITIVE_KEYS = new Set([
 const SECRET_STRING_PATTERNS = [
   /\bBearer\s+[A-Za-z0-9._~+/=-]+/g,
   /\bgorky_(?![0-9a-f]{6}\b)[A-Za-z0-9._-]+/g,
+  /\b(?:Cookie|Set-Cookie):\s*[^"\n\r]+/gi,
   /\b(?:access_token|refresh_token|id_token|client_secret)=([^&\s]+)/g,
 ] as const
 
