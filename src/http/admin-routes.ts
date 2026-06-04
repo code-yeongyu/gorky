@@ -2,6 +2,12 @@ import type { Hono } from "hono"
 import type { AppDependencies } from "../app"
 import { ensureFreshAccountToken } from "../domain/account-refresh"
 import { createRegisteredAccount, saveRegisteredAccounts } from "./admin-account-registration"
+import {
+  disableRegisteredAccount,
+  enableRegisteredAccount,
+  findRegisteredAccount,
+  listRegisteredAccounts,
+} from "./admin-account-store"
 import { registerAdminBulkAccountRoutes } from "./admin-bulk-account-routes"
 import { registerAdminKeyRoutes } from "./admin-key-routes"
 import { logAdminEvent, redactAccount } from "./admin-presenters"
@@ -75,13 +81,19 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
       return auth
     }
 
-    const accounts = await deps.store.listAccounts()
+    const accounts = await listRegisteredAccounts(deps)
+    if (accounts.kind === "failure") {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_accounts_list_failed", 502, {
+        errorCode: accounts.error.code,
+      })
+      return c.json({ error: accounts.error }, 502)
+    }
     logAdminEvent(deps, c.req.raw, c.req.path, "admin_accounts_listed", 200, {
-      count: accounts.length,
-      statuses: accounts.map((account) => account.status),
+      count: accounts.accounts.length,
+      statuses: accounts.accounts.map((account) => account.status),
     })
     return c.json({
-      accounts: accounts.map(redactAccount),
+      accounts: accounts.accounts.map(redactAccount),
     })
   })
 
@@ -92,8 +104,14 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
       return auth
     }
 
-    const account = await deps.store.disableAccount(c.req.param("id"))
-    if (!account) {
+    const account = await disableRegisteredAccount(deps, c.req.param("id"))
+    if (account.kind === "failure") {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_disable_failed", 502, {
+        errorCode: account.error.code,
+      })
+      return c.json({ error: account.error }, 502)
+    }
+    if (!account.account) {
       logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_disable_failed", 404, {
         errorCode: "account_not_found",
       })
@@ -104,11 +122,11 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
     }
 
     logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_disabled", 200, {
-      accountId: account.id,
-      modelIds: account.modelIds,
-      status: account.status,
+      accountId: account.account.id,
+      modelIds: account.account.modelIds,
+      status: account.account.status,
     })
-    return c.json({ account: redactAccount(account) })
+    return c.json({ account: redactAccount(account.account) })
   })
 
   app.post("/api/admin/accounts/:id/enable", async (c) => {
@@ -118,8 +136,14 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
       return auth
     }
 
-    const account = await deps.store.enableAccount(c.req.param("id"))
-    if (!account) {
+    const account = await enableRegisteredAccount(deps, c.req.param("id"))
+    if (account.kind === "failure") {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_enable_failed", 502, {
+        errorCode: account.error.code,
+      })
+      return c.json({ error: account.error }, 502)
+    }
+    if (!account.account) {
       logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_enable_failed", 404, {
         errorCode: "account_not_found",
       })
@@ -130,11 +154,11 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
     }
 
     logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_enabled", 200, {
-      accountId: account.id,
-      modelIds: account.modelIds,
-      status: account.status,
+      accountId: account.account.id,
+      modelIds: account.account.modelIds,
+      status: account.account.status,
     })
-    return c.json({ account: redactAccount(account) })
+    return c.json({ account: redactAccount(account.account) })
   })
 
   app.post("/api/admin/accounts/:id/refresh", async (c) => {
@@ -144,8 +168,14 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
       return auth
     }
 
-    const account = await deps.store.findAccountById(c.req.param("id"))
-    if (!account) {
+    const account = await findRegisteredAccount(deps, c.req.param("id"))
+    if (account.kind === "failure") {
+      logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_refresh_failed", 502, {
+        errorCode: account.error.code,
+      })
+      return c.json({ error: account.error }, 502)
+    }
+    if (!account.account) {
       logAdminEvent(deps, c.req.raw, c.req.path, "admin_account_refresh_failed", 404, {
         errorCode: "account_not_found",
       })
@@ -156,7 +186,7 @@ export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
     }
 
     const result = await ensureFreshAccountToken({
-      account,
+      account: account.account,
       client: { refresh: deps.refreshClient },
       force: true,
       now: deps.now(),
