@@ -6,6 +6,12 @@ import type { AccountTokenRecord } from "../domain/types"
 import { saveRegisteredAccounts } from "./admin-account-registration"
 import { getRequestId, readJson, requireAdmin, toOpenAiError } from "./auth"
 import { validateConfiguredModels } from "./model-validation"
+import {
+  deleteOAuthState,
+  exchangeOAuthCode,
+  getOAuthState,
+  putOAuthState,
+} from "./oauth-operations"
 import { OAuthStartRequestSchema } from "./schemas"
 
 const OAUTH_STATE_TTL_SECONDS = 600
@@ -55,7 +61,18 @@ export function registerOAuthRoutes(app: Hono, deps: AppDependencies): void {
       modelIds: requestedModelIds,
       now: deps.now(),
     })
-    await deps.oauthStateStore.put(start.state, start.stateRecord, OAUTH_STATE_TTL_SECONDS)
+    const stateSaved = await putOAuthState({
+      deps,
+      state: start.state,
+      record: start.stateRecord,
+      ttlSeconds: OAUTH_STATE_TTL_SECONDS,
+    })
+    if (stateSaved.kind === "failure") {
+      logOAuthEvent(deps, c.req.raw, c.req.path, "oauth_start_failed", 502, {
+        errorCode: stateSaved.error.code,
+      })
+      return c.json({ error: stateSaved.error }, 502)
+    }
     logOAuthEvent(deps, c.req.raw, c.req.path, "oauth_start_created", 201, {
       modelIds: start.stateRecord.modelIds,
       redirectOrigin: new URL(start.stateRecord.redirectUri).origin,
@@ -86,8 +103,14 @@ export function registerOAuthRoutes(app: Hono, deps: AppDependencies): void {
       )
     }
 
-    const saved = await deps.oauthStateStore.get(state)
-    if (!saved) {
+    const saved = await getOAuthState({ deps, state })
+    if (saved.kind === "failure") {
+      logOAuthEvent(deps, c.req.raw, c.req.path, "oauth_callback_failed", 502, {
+        errorCode: saved.error.code,
+      })
+      return c.json({ error: saved.error }, 502)
+    }
+    if (!saved.value) {
       logOAuthEvent(deps, c.req.raw, c.req.path, "oauth_callback_failed", 400, {
         errorCode: "invalid_oauth_state",
       })
@@ -96,9 +119,15 @@ export function registerOAuthRoutes(app: Hono, deps: AppDependencies): void {
         400,
       )
     }
-    await deps.oauthStateStore.delete(state)
+    const deleted = await deleteOAuthState({ deps, state })
+    if (deleted.kind === "failure") {
+      logOAuthEvent(deps, c.req.raw, c.req.path, "oauth_callback_failed", 502, {
+        errorCode: deleted.error.code,
+      })
+      return c.json({ error: deleted.error }, 502)
+    }
 
-    const modelValidation = validateConfiguredModels(deps, saved.modelIds)
+    const modelValidation = validateConfiguredModels(deps, saved.value.modelIds)
     if (modelValidation.kind === "failure") {
       logOAuthEvent(deps, c.req.raw, c.req.path, "oauth_callback_failed", 400, {
         errorCode: modelValidation.error.code,
@@ -107,29 +136,40 @@ export function registerOAuthRoutes(app: Hono, deps: AppDependencies): void {
       return c.json({ error: modelValidation.error }, 400)
     }
 
-    const exchanged = await deps.oauthAuthorizationClient.exchangeCode({
+    const exchanged = await exchangeOAuthCode({
+      deps,
       code,
-      codeVerifier: saved.codeVerifier,
-      redirectUri: saved.redirectUri,
+      codeVerifier: saved.value.codeVerifier,
+      redirectUri: saved.value.redirectUri,
     })
     if (exchanged.kind === "failure") {
       logOAuthEvent(deps, c.req.raw, c.req.path, "oauth_callback_failed", 502, {
-        errorCode: exchanged.errorCode,
-        modelIds: saved.modelIds,
+        errorCode: exchanged.error.code,
+      })
+      return c.json({ error: exchanged.error }, 502)
+    }
+    if (exchanged.value.kind === "failure") {
+      logOAuthEvent(deps, c.req.raw, c.req.path, "oauth_callback_failed", 502, {
+        errorCode: exchanged.value.errorCode,
+        modelIds: saved.value.modelIds,
       })
       return c.json(
-        toOpenAiError("grok_authorization_error", exchanged.errorCode, "Grok authorization failed"),
+        toOpenAiError(
+          "grok_authorization_error",
+          exchanged.value.errorCode,
+          "Grok authorization failed",
+        ),
         502,
       )
     }
 
     const account = {
       id: `acct_${crypto.randomUUID()}`,
-      email: exchanged.email,
-      accessToken: exchanged.accessToken,
-      refreshToken: exchanged.refreshToken,
-      expiresAt: deps.now() + exchanged.expiresInSeconds * 1000,
-      modelIds: saved.modelIds,
+      email: exchanged.value.email,
+      accessToken: exchanged.value.accessToken,
+      refreshToken: exchanged.value.refreshToken,
+      expiresAt: deps.now() + exchanged.value.expiresInSeconds * 1000,
+      modelIds: saved.value.modelIds,
       status: "active",
       lastUsedAt: null,
     } satisfies AccountTokenRecord
@@ -137,7 +177,7 @@ export function registerOAuthRoutes(app: Hono, deps: AppDependencies): void {
     if (savedAccount.kind === "failure") {
       logOAuthEvent(deps, c.req.raw, c.req.path, "oauth_callback_failed", 502, {
         errorCode: savedAccount.error.code,
-        modelIds: saved.modelIds,
+        modelIds: saved.value.modelIds,
       })
       return c.json({ error: savedAccount.error }, 502)
     }
