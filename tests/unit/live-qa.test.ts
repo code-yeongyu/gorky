@@ -8,6 +8,7 @@ import {
   assertOAuthUnknownModelResponse,
   assertOpenGraphMetadata,
   assertPublicAssetResponse,
+  assertPublicScriptResponse,
   assertSecurityHeaders,
   ManifestResponseSchema,
   V1ModelsResponseSchema,
@@ -176,10 +177,37 @@ describe("live QA contracts", () => {
     )
   })
 
+  it("Given a service worker script responds When checking the script Then the QA check passes", () => {
+    // Given
+    const response = {
+      status: 200,
+      contentType: "application/javascript",
+      label: "service worker",
+    }
+
+    // When / Then
+    expect(() => assertPublicScriptResponse(response)).not.toThrow()
+  })
+
+  it("Given a service worker script has wrong type When checking the script Then the QA check fails", () => {
+    // Given
+    const response = {
+      status: 200,
+      contentType: "text/html",
+      label: "service worker",
+    }
+
+    // When / Then
+    expect(() => assertPublicScriptResponse(response)).toThrow(
+      "Expected service worker script to be JavaScript",
+    )
+  })
+
   it("Given security headers are complete When checking headers Then the QA check passes", () => {
     // Given
     const headers = new Headers({
-      "content-security-policy": "default-src 'self'; frame-ancestors 'none'; object-src 'none'",
+      "content-security-policy":
+        "default-src 'self'; frame-ancestors 'none'; object-src 'none'; worker-src 'self'",
       "permissions-policy": "camera=(), microphone=(), geolocation=()",
       "referrer-policy": "no-referrer",
       "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
@@ -194,7 +222,8 @@ describe("live QA contracts", () => {
   it("Given a security header is missing When checking headers Then the QA check fails", () => {
     // Given
     const headers = new Headers({
-      "content-security-policy": "default-src 'self'; frame-ancestors 'none'; object-src 'none'",
+      "content-security-policy":
+        "default-src 'self'; frame-ancestors 'none'; object-src 'none'; worker-src 'self'",
       "permissions-policy": "camera=(), microphone=(), geolocation=()",
       "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
       "x-content-type-options": "nosniff",
@@ -224,10 +253,28 @@ describe("live QA contracts", () => {
     )
   })
 
-  it("Given HSTS is incomplete When checking headers Then the QA check fails", () => {
+  it("Given worker source policy is missing When checking headers Then the QA check fails", () => {
     // Given
     const headers = new Headers({
       "content-security-policy": "default-src 'self'; frame-ancestors 'none'; object-src 'none'",
+      "permissions-policy": "camera=(), microphone=(), geolocation=()",
+      "referrer-policy": "no-referrer",
+      "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+    })
+
+    // When / Then
+    expect(() => assertSecurityHeaders(headers, "dashboard")).toThrow(
+      "Weak dashboard security header: content-security-policy",
+    )
+  })
+
+  it("Given HSTS is incomplete When checking headers Then the QA check fails", () => {
+    // Given
+    const headers = new Headers({
+      "content-security-policy":
+        "default-src 'self'; frame-ancestors 'none'; object-src 'none'; worker-src 'self'",
       "permissions-policy": "camera=(), microphone=(), geolocation=()",
       "referrer-policy": "no-referrer",
       "strict-transport-security": "max-age=31536000",

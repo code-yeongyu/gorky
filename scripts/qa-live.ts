@@ -13,6 +13,7 @@ import {
   assertOpenGraphMetadata,
   assertOAuthUnknownModelResponse,
   assertPublicAssetResponse,
+  assertPublicScriptResponse,
   assertSecurityHeaders,
 } from "../src/domain/live-qa.ts"
 
@@ -82,6 +83,7 @@ async function runHttpChecks(baseUrl: URL): Promise<void> {
   for (const icon of manifest.icons) {
     await verifyPublicAsset(baseUrl, icon.src, "manifest icon")
   }
+  await verifyPublicScript(baseUrl, "/sw.js", "service worker")
   console.log(
     `HTTP checks ok: service=${health.service} models=${apiModels.models.length} admin=${ADMIN_PROTECTED_REQUESTS.length} manifest=${manifest.display}`,
   )
@@ -200,6 +202,16 @@ async function verifyPublicAsset(
   const response = await ky.get(new URL(assetPath ?? "", baseUrl), { throwHttpErrors: false })
   assertSecurityHeaders(response.headers, label)
   assertPublicAssetResponse({
+    status: response.status,
+    contentType: response.headers.get("content-type"),
+    label,
+  })
+}
+
+async function verifyPublicScript(baseUrl: URL, assetPath: string, label: string): Promise<void> {
+  const response = await ky.get(new URL(assetPath, baseUrl), { throwHttpErrors: false })
+  assertSecurityHeaders(response.headers, label)
+  assertPublicScriptResponse({
     status: response.status,
     contentType: response.headers.get("content-type"),
     label,

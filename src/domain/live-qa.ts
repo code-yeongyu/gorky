@@ -62,7 +62,12 @@ export type PublicAssetResponse = {
 const REQUIRED_SECURITY_HEADERS = [
   {
     name: "content-security-policy",
-    requiredValues: ["default-src 'self'", "frame-ancestors 'none'", "object-src 'none'"],
+    requiredValues: [
+      "default-src 'self'",
+      "frame-ancestors 'none'",
+      "object-src 'none'",
+      "worker-src 'self'",
+    ],
   },
   {
     name: "permissions-policy",
@@ -131,6 +136,17 @@ export function assertPublicAssetResponse(response: PublicAssetResponse): void {
   }
   if (!response.contentType?.includes("image/")) {
     throw new Error(`Expected ${response.label} asset to be an image, got ${response.contentType}`)
+  }
+}
+
+export function assertPublicScriptResponse(response: PublicAssetResponse): void {
+  if (response.status !== 200) {
+    throw new Error(`Expected ${response.label} script to return 200, got ${response.status}`)
+  }
+  if (!response.contentType?.toLowerCase().includes("javascript")) {
+    throw new Error(
+      `Expected ${response.label} script to be JavaScript, got ${response.contentType}`,
+    )
   }
 }
 
