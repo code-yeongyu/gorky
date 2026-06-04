@@ -51,7 +51,8 @@ export async function authenticateApiKey(
 }
 
 export function requireAdmin(headers: Headers, adminToken: string): Response | null {
-  if (adminToken.trim().length > 0 && headers.get("x-admin-token") === adminToken) {
+  const configuredAdminToken = adminToken.trim()
+  if (configuredAdminToken.length > 0 && headers.get("x-admin-token") === configuredAdminToken) {
     return null
   }
   return Response.json(

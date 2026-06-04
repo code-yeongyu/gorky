@@ -13,6 +13,17 @@ describe("admin authentication", () => {
     expect(response).toBeNull()
   })
 
+  it("Given configured admin token has whitespace When requiring admin Then the request is allowed", () => {
+    // Given
+    const headers = new Headers({ "x-admin-token": "dev-admin-token" })
+
+    // When
+    const response = requireAdmin(headers, "  dev-admin-token  ")
+
+    // Then
+    expect(response).toBeNull()
+  })
+
   it("Given configured admin token is empty When blank token header is sent Then the request is rejected", () => {
     // Given
     const headers = new Headers({ "x-admin-token": "" })
