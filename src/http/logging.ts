@@ -6,5 +6,6 @@ export type LoggerEvent = {
   readonly keyPrefix?: string
   readonly status?: number
   readonly model?: string
+  readonly durationMs?: number
   readonly metadata?: unknown
 }

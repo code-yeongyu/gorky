@@ -18,6 +18,7 @@ export function registerProxyRoutes(
   config: ProxyRouteConfig,
 ): void {
   app.post("/v1/chat/completions", async (c) => {
+    const startedAt = deps.now()
     const parsed = ChatCompletionRequestSchema.safeParse(await readJson(c.req.raw))
     if (!parsed.success) {
       return c.json(
@@ -28,7 +29,15 @@ export function registerProxyRoutes(
 
     const prepared = await prepareAccount(deps, c.req.raw.headers, parsed.data.model)
     if (prepared.kind === "failure") {
-      logProxyFailure(deps, c.req.raw, c.req.path, prepared.status, parsed.data.model, prepared)
+      logProxyFailure(
+        deps,
+        c.req.raw,
+        c.req.path,
+        prepared.status,
+        parsed.data.model,
+        prepared,
+        durationSince(deps, startedAt),
+      )
       return c.json({ error: prepared.error }, prepared.status)
     }
 
@@ -52,7 +61,15 @@ export function registerProxyRoutes(
         }),
     })
     if (upstream.kind === "failure") {
-      logProxyFailure(deps, c.req.raw, c.req.path, upstream.status, parsed.data.model, upstream)
+      logProxyFailure(
+        deps,
+        c.req.raw,
+        c.req.path,
+        upstream.status,
+        parsed.data.model,
+        upstream,
+        durationSince(deps, startedAt),
+      )
       return c.json({ error: upstream.error }, upstream.status)
     }
 
@@ -67,11 +84,13 @@ export function registerProxyRoutes(
       keyPrefix: prepared.keyPrefix,
       status: upstream.response.status,
       model: parsed.data.model,
+      durationMs: durationSince(deps, startedAt),
     })
     return upstream.response
   })
 
   app.post("/v1/responses", async (c) => {
+    const startedAt = deps.now()
     const parsed = ResponsesRequestSchema.safeParse(await readJson(c.req.raw))
     if (!parsed.success) {
       return c.json(
@@ -82,7 +101,15 @@ export function registerProxyRoutes(
 
     const prepared = await prepareAccount(deps, c.req.raw.headers, parsed.data.model)
     if (prepared.kind === "failure") {
-      logProxyFailure(deps, c.req.raw, c.req.path, prepared.status, parsed.data.model, prepared)
+      logProxyFailure(
+        deps,
+        c.req.raw,
+        c.req.path,
+        prepared.status,
+        parsed.data.model,
+        prepared,
+        durationSince(deps, startedAt),
+      )
       return c.json({ error: prepared.error }, prepared.status)
     }
 
@@ -103,7 +130,15 @@ export function registerProxyRoutes(
         }),
     })
     if (upstream.kind === "failure") {
-      logProxyFailure(deps, c.req.raw, c.req.path, upstream.status, parsed.data.model, upstream)
+      logProxyFailure(
+        deps,
+        c.req.raw,
+        c.req.path,
+        upstream.status,
+        parsed.data.model,
+        upstream,
+        durationSince(deps, startedAt),
+      )
       return c.json({ error: upstream.error }, upstream.status)
     }
 
@@ -118,6 +153,7 @@ export function registerProxyRoutes(
       keyPrefix: prepared.keyPrefix,
       status: upstream.response.status,
       model: parsed.data.model,
+      durationMs: durationSince(deps, startedAt),
     })
     return upstream.response
   })
@@ -185,6 +221,7 @@ function logProxyFailure(
     readonly error: { readonly code: string; readonly type: string }
     readonly keyPrefix?: string
   },
+  durationMs: number,
 ): void {
   const event = {
     event: "proxy_request_failed",
@@ -193,10 +230,15 @@ function logProxyFailure(
     method: request.method,
     status,
     model,
+    durationMs,
     metadata: {
       errorCode: failure.error.code,
       errorType: failure.error.type,
     },
   }
   deps.logger?.(failure.keyPrefix ? { ...event, keyPrefix: failure.keyPrefix } : event)
+}
+
+function durationSince(deps: AppDependencies, startedAt: number): number {
+  return Math.max(0, deps.now() - startedAt)
 }
