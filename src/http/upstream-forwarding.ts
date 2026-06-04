@@ -39,6 +39,9 @@ export async function forwardWithAuthRetry(input: {
   if (firstResponse.kind === "failure") {
     return firstResponse
   }
+  if (isUpstreamServerFailure(firstResponse.response.status)) {
+    return upstreamResponseFailure(input.prepared.keyPrefix)
+  }
   if (!isUpstreamAuthFailure(firstResponse.response.status)) {
     return { kind: "success", response: firstResponse.response, account: input.prepared.account }
   }
@@ -80,6 +83,9 @@ export async function forwardWithAuthRetry(input: {
   if (retryResponse.kind === "failure") {
     return retryResponse
   }
+  if (isUpstreamServerFailure(retryResponse.response.status)) {
+    return upstreamResponseFailure(input.prepared.keyPrefix)
+  }
   if (isUpstreamAuthFailure(retryResponse.response.status)) {
     return {
       kind: "failure",
@@ -93,6 +99,19 @@ export async function forwardWithAuthRetry(input: {
     }
   }
   return { kind: "success", response: retryResponse.response, account: refreshed.account }
+}
+
+function upstreamResponseFailure(keyPrefix: string): ForwardFailure {
+  return {
+    kind: "failure",
+    status: 502,
+    keyPrefix,
+    error: toOpenAiError(
+      "grok_upstream_error",
+      "upstream_response_failed",
+      "Grok upstream returned an error",
+    ).error,
+  }
 }
 
 async function callUpstream(
@@ -121,4 +140,8 @@ async function callUpstream(
 
 function isUpstreamAuthFailure(status: number): boolean {
   return status === 401 || status === 403
+}
+
+function isUpstreamServerFailure(status: number): boolean {
+  return status >= 500
 }
