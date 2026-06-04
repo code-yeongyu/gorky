@@ -57,7 +57,7 @@ the deployed Worker:
 export GROK_MODELS_BASE_URL="https://gorky.code-yeon-gyu.workers.dev/v1"
 export GROK_CODE_XAI_API_KEY="gorky_..."
 grok models
-grok -m grok-build -p "Say hello through Gorky"
+grok -m grok-composer-2.5-fast -p "Say hello through Gorky"
 ```
 
 `GROK_MODELS_BASE_URL` makes Grok fetch

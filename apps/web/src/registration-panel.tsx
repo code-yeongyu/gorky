@@ -25,7 +25,9 @@ export function RegistrationPanel(props: {
           adminToken: props.adminToken,
           body: {
             redirectUri,
-            modelIds: selectedModels.length ? selectedModels : [props.models[0] ?? "grok-build"],
+            modelIds: selectedModels.length
+              ? selectedModels
+              : [props.models[0] ?? "grok-composer-2.5-fast"],
           },
         },
       )

@@ -49,7 +49,10 @@ export function App(): React.ReactElement {
       .catch(() => setNotice({ kind: "error", message: "Could not load models." }))
   }, [])
 
-  const modelOptions = useMemo(() => (models.length ? models : ["grok-build"]), [models])
+  const modelOptions = useMemo(
+    () => (models.length ? models : ["grok-composer-2.5-fast"]),
+    [models],
+  )
 
   async function refreshDashboard(token = adminToken): Promise<void> {
     if (!token) return

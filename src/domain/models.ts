@@ -1,4 +1,4 @@
-export const DEFAULT_GROK_MODELS = ["grok-composer-2.5-fast", "grok-build"] as const
+export const DEFAULT_GROK_MODELS = ["grok-composer-2.5-fast"] as const
 
 export type GrokModelId = (typeof DEFAULT_GROK_MODELS)[number]
 

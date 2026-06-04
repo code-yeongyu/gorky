@@ -63,7 +63,7 @@ describe("admin key routes", () => {
       store,
       adminToken: "dev-admin-token",
       now: () => 1_780_000_000_000,
-      models: ["grok-build"],
+      models: ["grok-composer-2.5-fast"],
       upstream: async () => Response.json({ ok: true }),
       refreshClient: async (): Promise<TokenRefreshResult> => ({
         kind: "success",
@@ -121,7 +121,7 @@ describe("admin key routes", () => {
       },
       body: JSON.stringify({
         name: "qa-key",
-        allowedModels: ["grok-build"],
+        allowedModels: ["grok-composer-2.5-fast"],
       }),
     })
     const createdBody = CreatedKeyResponseSchema.parse(await created.json())
@@ -138,7 +138,7 @@ describe("admin key routes", () => {
     expect(response.status).toBe(200)
     expect(text).toContain(createdBody.keyPrefix)
     expect(text).toContain("qa-key")
-    expect(text).toContain("grok-build")
+    expect(text).toContain("grok-composer-2.5-fast")
     expect(text).not.toContain(createdBody.plaintextKey)
     expect(text).not.toContain(store.apiKeys[0]?.keyHash)
     expect(text).not.toContain("keyHash")
@@ -152,7 +152,7 @@ describe("admin key routes", () => {
       accessToken: "SENSITIVE_ACCESS_SENTINEL",
       refreshToken: "SENSITIVE_REFRESH_SENTINEL",
       expiresAt: 1_780_001_000_000,
-      modelIds: ["grok-build"],
+      modelIds: ["grok-composer-2.5-fast"],
       status: "active",
       lastUsedAt: null,
     }
@@ -181,7 +181,7 @@ describe("admin key routes", () => {
       },
       body: JSON.stringify({
         name: "qa-key",
-        allowedModels: ["grok-build"],
+        allowedModels: ["grok-composer-2.5-fast"],
       }),
     })
     const createdBody = CreatedKeyResponseSchema.parse(await created.json())
@@ -205,7 +205,7 @@ describe("admin key routes", () => {
         "x-api-key": createdBody.plaintextKey,
       },
       body: JSON.stringify({
-        model: "grok-build",
+        model: "grok-composer-2.5-fast",
         messages: [{ role: "user", content: "ping" }],
       }),
     })

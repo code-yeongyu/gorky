@@ -72,7 +72,7 @@ describe("admin routes", () => {
       store,
       adminToken: "dev-admin-token",
       now: () => 1_780_000_000_000,
-      models: ["grok-build"],
+      models: ["grok-composer-2.5-fast"],
       upstream: async () => Response.json({ ok: true }),
       refreshClient: async (): Promise<TokenRefreshResult> => ({
         kind: "success",
@@ -115,7 +115,7 @@ describe("admin routes", () => {
       accessToken: "SENSITIVE_ACCESS_SENTINEL",
       refreshToken: "SENSITIVE_REFRESH_SENTINEL",
       expiresAt: 1_780_001_000_000,
-      modelIds: ["grok-build"],
+      modelIds: ["grok-composer-2.5-fast"],
       status: "active",
       lastUsedAt: null,
     }
@@ -144,7 +144,7 @@ describe("admin routes", () => {
       },
       body: JSON.stringify({
         name: "qa-key",
-        allowedModels: ["grok-build"],
+        allowedModels: ["grok-composer-2.5-fast"],
       }),
     })
     const createdBody = CreatedKeyResponseSchema.parse(await created.json())
@@ -164,7 +164,7 @@ describe("admin routes", () => {
         "x-api-key": createdBody.plaintextKey,
       },
       body: JSON.stringify({
-        model: "grok-build",
+        model: "grok-composer-2.5-fast",
         messages: [{ role: "user", content: "ping" }],
       }),
     })
@@ -195,7 +195,7 @@ describe("admin routes", () => {
       accessToken: "SENSITIVE_ACCESS_SENTINEL",
       refreshToken: "SENSITIVE_REFRESH_SENTINEL",
       expiresAt: 1_780_000_000_000,
-      modelIds: ["grok-composer-2.5-fast", "grok-build"],
+      modelIds: ["grok-composer-2.5-fast", "grok-composer-2.5-fast"],
       status: "active",
       lastUsedAt: null,
     }
@@ -223,7 +223,7 @@ describe("admin routes", () => {
     // Then
     expect(response.status).toBe(200)
     expect(text).toContain("qa@example.com")
-    expect(text).toContain("grok-build")
+    expect(text).toContain("grok-composer-2.5-fast")
     expect(text).toContain('"principalType":"User"')
     expect(text).toContain('"status":"active"')
     expect(text).not.toContain("SENSITIVE_ACCESS_SENTINEL")

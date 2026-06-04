@@ -62,7 +62,7 @@ describe("OAuth account registration routes", () => {
       },
       body: JSON.stringify({
         redirectUri: "https://gorky.example.com/api/oauth/callback",
-        modelIds: ["grok-build"],
+        modelIds: ["grok-composer-2.5-fast"],
       }),
     })
     const body = StartResponseSchema.parse(await response.json())
@@ -73,7 +73,7 @@ describe("OAuth account registration routes", () => {
     expect(body.authorizationUrl).toContain("https://auth.x.ai/oauth2/authorize")
     expect(body.authorizationUrl).toContain("code_challenge_method=S256")
     expect(saved?.redirectUri).toBe("https://gorky.example.com/api/oauth/callback")
-    expect(saved?.modelIds).toEqual(["grok-build"])
+    expect(saved?.modelIds).toEqual(["grok-composer-2.5-fast"])
   })
 
   it("Given non-http redirect URI When OAuth start is requested Then state is not stored", async () => {
@@ -111,7 +111,7 @@ describe("OAuth account registration routes", () => {
       },
       body: JSON.stringify({
         redirectUri: "javascript:alert(1)",
-        modelIds: ["grok-build"],
+        modelIds: ["grok-composer-2.5-fast"],
       }),
     })
     const text = await response.text()
@@ -132,7 +132,7 @@ describe("OAuth account registration routes", () => {
         codeVerifier: "verifier_12345678901234567890123456789012",
         redirectUri: "https://gorky.example.com/api/oauth/callback",
         nonce: "nonce_12345678901234567890",
-        modelIds: ["grok-build"],
+        modelIds: ["grok-composer-2.5-fast"],
         createdAt: 1_780_000_000_000,
       },
       600,
@@ -189,7 +189,7 @@ describe("OAuth account registration routes", () => {
         codeVerifier: "verifier_abcdefghijklmnopqrstuvwxyz123456",
         redirectUri: "https://gorky.example.com/api/oauth/callback",
         nonce: "nonce_abcdefghijklmnopqrstuvwxyz",
-        modelIds: ["grok-build"],
+        modelIds: ["grok-composer-2.5-fast"],
         createdAt: 1_780_000_000_000,
       },
       600,

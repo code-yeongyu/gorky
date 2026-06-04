@@ -43,7 +43,7 @@ describe("admin account registration routes", () => {
         accessToken: "SENSITIVE_ACCESS_SENTINEL",
         refreshToken: "SENSITIVE_REFRESH_SENTINEL",
         expiresAt: 1_780_001_000_000,
-        modelIds: ["grok-build"],
+        modelIds: ["grok-composer-2.5-fast"],
       }),
     })
     const text = await response.text()
@@ -92,7 +92,7 @@ describe("admin account registration routes", () => {
             accessToken: "SENSITIVE_FIRST_ACCESS",
             refreshToken: "SENSITIVE_FIRST_REFRESH",
             expiresAt: 1_780_001_000_000,
-            modelIds: ["grok-build"],
+            modelIds: ["grok-composer-2.5-fast"],
           },
           {
             email: "second@example.com",

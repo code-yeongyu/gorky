@@ -26,7 +26,7 @@ describe("models route", () => {
     // Then
     expect(response.status).toBe(200)
     expect(body).toMatchObject({
-      models: ["grok-composer-2.5-fast", "grok-build"],
+      models: ["grok-composer-2.5-fast"],
     })
   })
 
@@ -53,10 +53,7 @@ describe("models route", () => {
     expect(response.status).toBe(200)
     expect(body).toMatchObject({
       object: "list",
-      data: [
-        { id: "grok-composer-2.5-fast", object: "model", owned_by: "xai" },
-        { id: "grok-build", object: "model", owned_by: "xai" },
-      ],
+      data: [{ id: "grok-composer-2.5-fast", object: "model", owned_by: "xai" }],
     })
   })
 })
