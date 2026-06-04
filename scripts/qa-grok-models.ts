@@ -1,9 +1,15 @@
 import { execFile } from "node:child_process"
-import { readFile } from "node:fs/promises"
+import { access, readFile } from "node:fs/promises"
+import { homedir } from "node:os"
 import { promisify } from "node:util"
 import ky from "ky"
 import { ApiModelsResponseSchema, assertModelCatalogContains } from "../src/domain/live-qa.ts"
-import { parseGrokCliAvailableModels } from "../src/domain/grok-cli-model-sync.ts"
+import {
+  buildEmptyGrokModelsDiagnostic,
+  type GrokModelsCacheSummary,
+  parseGrokCliAvailableModels,
+  summarizeGrokModelsCache,
+} from "../src/domain/grok-cli-model-sync.ts"
 import { parseGrokModelIds } from "../src/domain/models.ts"
 
 const execFileAsync = promisify(execFile)
@@ -16,7 +22,17 @@ async function main(): Promise<void> {
   const { stdout } = await execFileAsync(grokBin, ["models"])
   const cliModels = parseGrokCliAvailableModels(stdout)
   if (!cliModels.length) {
-    throw new Error("No Grok CLI models found. Run `grok login` and retry.")
+    const grokHome = process.env["GROK_HOME"] ?? `${homedir()}/.grok`
+    const authJsonPath = `${grokHome}/auth.json`
+    throw new Error(
+      buildEmptyGrokModelsDiagnostic({
+        authJsonPath,
+        authJsonExists: await fileExists(authJsonPath),
+        cache: await readModelsCacheSummary(`${grokHome}/models_cache.json`),
+        grokBin,
+        output: stdout,
+      }),
+    )
   }
 
   const wranglerConfig = await readFile(WRANGLER_CONFIG_PATH, "utf8")
@@ -28,6 +44,33 @@ async function main(): Promise<void> {
   assertModelCatalogContains(cliModels, wranglerModels, "wrangler.toml GROK_MODEL_IDS")
   assertModelCatalogContains(cliModels, liveModels, "live /api/models")
   console.log(`Grok model parity ok: ${cliModels.join(", ")}`)
+}
+
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    await access(path)
+    return true
+  } catch (error) {
+    if (error instanceof Error) {
+      return false
+    }
+    throw error
+  }
+}
+
+async function readModelsCacheSummary(path: string): Promise<GrokModelsCacheSummary> {
+  if (!(await fileExists(path))) {
+    return { kind: "missing" }
+  }
+
+  try {
+    return summarizeGrokModelsCache(JSON.parse(await readFile(path, "utf8")))
+  } catch (error) {
+    if (error instanceof Error) {
+      return { kind: "invalid" }
+    }
+    throw error
+  }
 }
 
 function readWranglerModelIds(toml: string): readonly string[] {

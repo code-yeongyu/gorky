@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import {
+  buildEmptyGrokModelsDiagnostic,
   parseGrokCliAvailableModels,
+  summarizeGrokModelsCache,
   updateWranglerModelIds,
 } from "../../src/domain/grok-cli-model-sync"
 
@@ -56,5 +58,34 @@ GROK_MODEL_IDS = "grok-build"
     // Then
     expect(nextConfig).toContain('GROK_MODEL_IDS = "grok-composer-2.5-fast,grok-build"')
     expect(nextConfig.match(/GROK_MODEL_IDS/g)).toHaveLength(2)
+  })
+
+  it("Given empty CLI models and cached ids When building diagnostics Then auth and cache state are explained", () => {
+    // Given
+    const cache = summarizeGrokModelsCache({
+      auth_method: "api_key",
+      models: {
+        "grok-composer-2.5-fast": {},
+        "grok-build": {},
+      },
+    })
+
+    // When
+    const message = buildEmptyGrokModelsDiagnostic({
+      authJsonPath: "/Users/qa/.grok/auth.json",
+      authJsonExists: false,
+      cache,
+      grokBin: "/Users/qa/.grok/bin/grok",
+      output: "You are not authenticated.\n\nDefault model: grok-build\n\nAvailable models:\n",
+    })
+
+    // Then
+    expect(message).toContain("No Grok CLI models found.")
+    expect(message).toContain("CLI output says: You are not authenticated.")
+    expect(message).toContain("Grok auth file: missing at /Users/qa/.grok/auth.json")
+    expect(message).toContain(
+      "Cached model catalog: 2 model(s) from api_key: grok-composer-2.5-fast, grok-build",
+    )
+    expect(message).toContain("/Users/qa/.grok/bin/grok login --device-auth")
   })
 })
