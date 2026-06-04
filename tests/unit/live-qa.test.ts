@@ -5,6 +5,7 @@ import {
   assertAdminProtectionResponse,
   assertMatchingModelCatalog,
   assertModelCatalogContains,
+  assertOAuthUnknownModelResponse,
   ManifestResponseSchema,
   V1ModelsResponseSchema,
 } from "../../src/domain/live-qa"
@@ -91,6 +92,30 @@ describe("live QA contracts", () => {
     // When / Then
     expect(() => assertAdminProtectionResponse(200, body, "list accounts")).toThrow(
       "Expected list accounts admin protection to return 401, got 200",
+    )
+  })
+
+  it("Given OAuth rejects an unknown model When checking live behavior Then the QA check passes", () => {
+    // Given
+    const body = {
+      error: {
+        type: "invalid_request_error",
+        code: "unknown_model",
+        message: "Unknown model: grok-live-qa-missing",
+      },
+    }
+
+    // When / Then
+    expect(() => assertOAuthUnknownModelResponse(400, body)).not.toThrow()
+  })
+
+  it("Given OAuth accepts an unknown model When checking live behavior Then the QA check fails", () => {
+    // Given
+    const body = { authorizationUrl: "https://auth.x.ai/authorize", state: "state_1" }
+
+    // When / Then
+    expect(() => assertOAuthUnknownModelResponse(201, body)).toThrow(
+      "Expected OAuth unknown-model live check to return 400, got 201",
     )
   })
 })

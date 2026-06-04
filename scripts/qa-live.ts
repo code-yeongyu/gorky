@@ -10,6 +10,7 @@ import {
   V1ModelsResponseSchema,
   assertAdminProtectionResponse,
   assertMatchingModelCatalog,
+  assertOAuthUnknownModelResponse,
 } from "../src/domain/live-qa.ts"
 
 const DEFAULT_BASE_URL = "https://gorky.code-yeon-gyu.workers.dev"
@@ -65,10 +66,31 @@ async function runHttpChecks(baseUrl: URL): Promise<void> {
     assertAdminProtectionResponse(response.status, await response.json(), request.label)
   }
 
+  await runAdminErrorChecks(baseUrl)
+
   const manifest = await getJson(new URL("/manifest.webmanifest", baseUrl), ManifestResponseSchema)
   console.log(
     `HTTP checks ok: service=${health.service} models=${apiModels.models.length} admin=${ADMIN_PROTECTED_REQUESTS.length} manifest=${manifest.display}`,
   )
+}
+
+async function runAdminErrorChecks(baseUrl: URL): Promise<void> {
+  const adminToken = process.env["GORKY_LIVE_ADMIN_TOKEN"] ?? process.env["GORKY_ADMIN_TOKEN"]
+  if (!adminToken) {
+    console.log("OAuth unknown-model live check skipped: set GORKY_LIVE_ADMIN_TOKEN to enable it")
+    return
+  }
+
+  const response = await ky.post(new URL("/api/admin/oauth/start", baseUrl), {
+    headers: { "x-admin-token": adminToken },
+    json: {
+      redirectUri: new URL("/api/oauth/callback", baseUrl).href,
+      modelIds: ["grok-live-qa-missing"],
+    },
+    throwHttpErrors: false,
+  })
+  assertOAuthUnknownModelResponse(response.status, await response.json())
+  console.log("OAuth unknown-model live check ok")
 }
 
 async function getJson<TSchema extends z.ZodType>(

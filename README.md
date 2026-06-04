@@ -114,9 +114,11 @@ GORKY_GROK_BIN=/Users/yeongyu/.grok/bin/grok pnpm qa:grok-models
 ```
 
 `pnpm qa:live` checks the deployed Worker health, model catalogs, admin
-protection, PWA manifest, and desktop/mobile dashboard rendering. Screenshots
-are written to `.qa/`, which is ignored so token-bearing manual evidence does
-not enter public commits.
+protection, PWA manifest, and desktop/mobile dashboard rendering. When
+`GORKY_LIVE_ADMIN_TOKEN` or `GORKY_ADMIN_TOKEN` is present, it also verifies
+that OAuth registration rejects unknown models as a structured API error before
+state is stored. Screenshots are written to `.qa/`, which is ignored so
+token-bearing manual evidence does not enter public commits.
 
 `pnpm qa:grok-models` requires an authenticated local Grok CLI. It compares
 `grok models` with `wrangler.toml` and the deployed `/api/models` catalog so

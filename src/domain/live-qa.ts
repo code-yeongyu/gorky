@@ -31,6 +31,14 @@ export const AdminProtectionResponseSchema = z.object({
   }),
 })
 
+export const OAuthUnknownModelResponseSchema = z.object({
+  error: z.object({
+    type: z.literal("invalid_request_error"),
+    code: z.literal("unknown_model"),
+    message: z.string().min(1),
+  }),
+})
+
 export const ManifestResponseSchema = z.object({
   name: z.literal("Gorky"),
   display: z.literal("standalone"),
@@ -53,6 +61,13 @@ export function assertAdminProtectionResponse(status: number, body: unknown, lab
     throw new Error(`Expected ${label} admin protection to return 401, got ${status}`)
   }
   AdminProtectionResponseSchema.parse(body)
+}
+
+export function assertOAuthUnknownModelResponse(status: number, body: unknown): void {
+  if (status !== 400) {
+    throw new Error(`Expected OAuth unknown-model live check to return 400, got ${status}`)
+  }
+  OAuthUnknownModelResponseSchema.parse(body)
 }
 
 export function assertModelCatalogContains(
