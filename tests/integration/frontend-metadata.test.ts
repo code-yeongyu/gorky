@@ -19,6 +19,7 @@ describe("frontend metadata", () => {
 
     // Then
     expect(indexHtml).toContain('<meta property="og:title" content="Gorky"')
+    expect(indexHtml).toContain('<meta name="theme-color" content="#1f2228"')
     expect(indexHtml).toContain('<link rel="manifest" href="/manifest.webmanifest"')
     expect(mainTsx).toContain('serviceWorker.register("/sw.js")')
     expect(manifest).toContain('"name": "Gorky"')
