@@ -79,6 +79,20 @@ GROK_MODEL_IDS = "grok-build"
     expect(nextConfig.match(/GROK_MODEL_IDS/g)).toHaveLength(2)
   })
 
+  it("Given wrangler config is missing model ids When updating model ids Then sync fails loudly", () => {
+    // Given
+    const config = `
+[vars]
+GROK_CLIENT_VERSION = "0.2.16"
+`
+
+    // When
+    const update = () => updateWranglerModelIds(config, ["grok-build"])
+
+    // Then
+    expect(update).toThrow("wrangler.toml is missing GROK_MODEL_IDS")
+  })
+
   it("Given empty CLI models and cached ids When building diagnostics Then auth and cache state are explained", () => {
     // Given
     const cache = summarizeGrokModelsCache({
