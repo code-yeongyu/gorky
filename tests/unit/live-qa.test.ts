@@ -8,6 +8,7 @@ import {
   assertOAuthUnknownModelResponse,
   assertOpenGraphMetadata,
   assertPublicAssetResponse,
+  assertSecurityHeaders,
   ManifestResponseSchema,
   V1ModelsResponseSchema,
 } from "../../src/domain/live-qa"
@@ -172,6 +173,35 @@ describe("live QA contracts", () => {
     // When / Then
     expect(() => assertPublicAssetResponse(response)).toThrow(
       "Expected manifest icon asset to return 200, got 404",
+    )
+  })
+
+  it("Given security headers are complete When checking headers Then the QA check passes", () => {
+    // Given
+    const headers = new Headers({
+      "content-security-policy": "default-src 'self'; frame-ancestors 'none'",
+      "permissions-policy": "camera=(), microphone=(), geolocation=()",
+      "referrer-policy": "no-referrer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+    })
+
+    // When / Then
+    expect(() => assertSecurityHeaders(headers, "health")).not.toThrow()
+  })
+
+  it("Given a security header is missing When checking headers Then the QA check fails", () => {
+    // Given
+    const headers = new Headers({
+      "content-security-policy": "default-src 'self'; frame-ancestors 'none'",
+      "permissions-policy": "camera=()",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+    })
+
+    // When / Then
+    expect(() => assertSecurityHeaders(headers, "health")).toThrow(
+      "Missing health security header: referrer-policy",
     )
   })
 })

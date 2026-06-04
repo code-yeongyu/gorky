@@ -6,6 +6,7 @@ import { extractApiKey, getRequestId } from "./http/auth"
 import { createRedactingLogger, type LoggerEvent } from "./http/logging"
 import { registerOAuthRoutes } from "./http/oauth-routes"
 import { registerProxyRoutes } from "./http/proxy-routes"
+import { registerSecurityHeaders } from "./http/security-headers"
 import { redactSensitiveData } from "./lib/redaction"
 import type { GorkyStore } from "./store"
 
@@ -39,6 +40,8 @@ export function createApp(deps: AppDependencies): Hono {
   const routeDeps = deps.logger
     ? { ...deps, logger: createRedactingLogger(deps.logger), models }
     : { ...deps, models }
+
+  registerSecurityHeaders(app)
 
   app.get("/health", (c) => c.json({ status: "ok", service: "gorky" }))
 

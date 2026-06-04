@@ -13,6 +13,7 @@ import {
   assertOpenGraphMetadata,
   assertOAuthUnknownModelResponse,
   assertPublicAssetResponse,
+  assertSecurityHeaders,
 } from "../src/domain/live-qa.ts"
 
 const DEFAULT_BASE_URL = "https://gorky.code-yeon-gyu.workers.dev"
@@ -55,7 +56,9 @@ async function main(): Promise<void> {
 }
 
 async function runHttpChecks(baseUrl: URL): Promise<void> {
-  const health = await getJson(new URL("/health", baseUrl), HealthResponseSchema)
+  const healthResponse = await ky.get(new URL("/health", baseUrl))
+  const health = HealthResponseSchema.parse(await healthResponse.json())
+  assertSecurityHeaders(healthResponse.headers, "health")
   const apiModels = await getJson(new URL("/api/models", baseUrl), ApiModelsResponseSchema)
   const v1Models = await getJson(new URL("/v1/models", baseUrl), V1ModelsResponseSchema)
   assertMatchingModelCatalog(apiModels, v1Models)

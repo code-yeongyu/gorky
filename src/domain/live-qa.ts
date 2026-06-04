@@ -59,6 +59,14 @@ export type PublicAssetResponse = {
   readonly label: string
 }
 
+const REQUIRED_SECURITY_HEADERS = [
+  "content-security-policy",
+  "permissions-policy",
+  "referrer-policy",
+  "x-content-type-options",
+  "x-frame-options",
+] as const
+
 export function assertMatchingModelCatalog(
   apiModels: z.infer<typeof ApiModelsResponseSchema>,
   v1Models: z.infer<typeof V1ModelsResponseSchema>,
@@ -104,6 +112,14 @@ export function assertPublicAssetResponse(response: PublicAssetResponse): void {
   }
   if (!response.contentType?.includes("image/")) {
     throw new Error(`Expected ${response.label} asset to be an image, got ${response.contentType}`)
+  }
+}
+
+export function assertSecurityHeaders(headers: Headers, label: string): void {
+  for (const header of REQUIRED_SECURITY_HEADERS) {
+    if (!headers.get(header)?.trim()) {
+      throw new Error(`Missing ${label} security header: ${header}`)
+    }
   }
 }
 
