@@ -115,11 +115,29 @@ export async function requestJson<T = unknown>(
   }
 
   const response = await fetch(path, init)
-  const json = await response.json()
+  const json = await readJsonBody<T>(response)
   if (!response.ok) {
     throw new Error(errorMessage(json))
   }
+  if (json === null) {
+    throw new Error("Request failed.")
+  }
   return json
+}
+
+async function readJsonBody<T>(response: Response): Promise<T | null> {
+  const text = await response.text()
+  if (!text.trim()) {
+    return null
+  }
+  try {
+    return JSON.parse(text)
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return null
+    }
+    throw error
+  }
 }
 
 export function errorMessage(value: unknown): string {
