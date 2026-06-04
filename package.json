@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && pnpm --filter @gorky/web typecheck",
     "lint": "biome check .",
     "format": "biome format --write .",
     "build": "pnpm --filter @gorky/web build",
