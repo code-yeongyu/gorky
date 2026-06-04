@@ -3,6 +3,7 @@ import type { AppDependencies } from "../app"
 import { DEFAULT_GROK_MODELS } from "../domain/models"
 import { createAuthorizationStart } from "../domain/oauth"
 import type { AccountTokenRecord } from "../domain/types"
+import { saveRegisteredAccounts } from "./admin-account-registration"
 import { getRequestId, readJson, requireAdmin, toOpenAiError } from "./auth"
 import { validateConfiguredModels } from "./model-validation"
 import { OAuthStartRequestSchema } from "./schemas"
@@ -132,7 +133,15 @@ export function registerOAuthRoutes(app: Hono, deps: AppDependencies): void {
       status: "active",
       lastUsedAt: null,
     } satisfies AccountTokenRecord
-    await deps.store.saveAccount(account)
+    const savedAccount = await saveRegisteredAccounts(deps, [account])
+    if (savedAccount.kind === "failure") {
+      logOAuthEvent(deps, c.req.raw, c.req.path, "oauth_callback_failed", 502, {
+        errorCode: savedAccount.error.code,
+        modelIds: saved.modelIds,
+      })
+      return c.json({ error: savedAccount.error }, 502)
+    }
+
     logOAuthEvent(deps, c.req.raw, c.req.path, "oauth_account_registered", 201, {
       accountId: account.id,
       modelIds: account.modelIds,
