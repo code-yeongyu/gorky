@@ -7,9 +7,11 @@ import { ApiModelsResponseSchema, assertModelCatalogContains } from "../src/doma
 import {
   buildEmptyGrokModelsDiagnostic,
   buildMissingGrokBinaryDiagnostic,
+  COMMON_LOCAL_GROK_BIN_PATH,
   type GrokModelsCacheSummary,
   parseGrokCliAvailableModels,
   readWranglerModelIdSets,
+  resolveGrokBinaryPath,
   summarizeGrokModelsCache,
 } from "../src/domain/grok-cli-model-sync.ts"
 
@@ -18,7 +20,10 @@ const DEFAULT_BASE_URL = "https://gorky.code-yeon-gyu.workers.dev"
 const WRANGLER_CONFIG_PATH = new URL("../wrangler.toml", import.meta.url)
 
 async function main(): Promise<void> {
-  const grokBin = process.env["GORKY_GROK_BIN"] ?? "grok"
+  const grokBin = resolveGrokBinaryPath({
+    configuredBin: process.env["GORKY_GROK_BIN"],
+    commonLocalBinExists: await fileExists(COMMON_LOCAL_GROK_BIN_PATH),
+  })
   const baseUrl = new URL(process.env["GORKY_LIVE_BASE_URL"] ?? DEFAULT_BASE_URL)
   const stdout = await readGrokModelsOutput(grokBin)
   const cliModels = parseGrokCliAvailableModels(stdout)

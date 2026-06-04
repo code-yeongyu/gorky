@@ -22,10 +22,17 @@ type EmptyGrokModelsDiagnosticInput = {
   readonly output: string
 }
 
+type GrokBinaryPathInput = {
+  readonly configuredBin: string | undefined
+  readonly commonLocalBinExists: boolean
+}
+
 export type WranglerModelIdSet = {
   readonly label: string
   readonly modelIds: readonly string[]
 }
+
+export const COMMON_LOCAL_GROK_BIN_PATH = "/Users/yeongyu/.grok/bin/grok"
 
 export function parseGrokCliAvailableModels(output: string): readonly string[] {
   const lines = output.split(/\r?\n/)
@@ -94,6 +101,13 @@ export function buildMissingGrokBinaryDiagnostic(grokBin: string): string {
     "Set GORKY_GROK_BIN to the Grok CLI absolute path.",
     "Common local path: /Users/yeongyu/.grok/bin/grok",
   ].join("\n")
+}
+
+export function resolveGrokBinaryPath(input: GrokBinaryPathInput): string {
+  if (input.configuredBin?.trim()) {
+    return input.configuredBin
+  }
+  return input.commonLocalBinExists ? COMMON_LOCAL_GROK_BIN_PATH : "grok"
 }
 
 function cacheDiagnosticLine(cache: GrokModelsCacheSummary): string {

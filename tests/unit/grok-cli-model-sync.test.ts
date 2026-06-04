@@ -4,6 +4,7 @@ import {
   buildMissingGrokBinaryDiagnostic,
   parseGrokCliAvailableModels,
   readWranglerModelIdSets,
+  resolveGrokBinaryPath,
   summarizeGrokModelsCache,
   updateWranglerModelIds,
 } from "../../src/domain/grok-cli-model-sync"
@@ -182,5 +183,38 @@ GROK_MODEL_IDS = "grok-composer-2.5-fast"
     expect(message).toContain("Grok CLI binary was not found: grok")
     expect(message).toContain("Set GORKY_GROK_BIN")
     expect(message).toContain("/Users/yeongyu/.grok/bin/grok")
+  })
+
+  it("Given no configured binary and common local binary exists When resolving path Then common path is used", () => {
+    // When
+    const grokBin = resolveGrokBinaryPath({
+      configuredBin: undefined,
+      commonLocalBinExists: true,
+    })
+
+    // Then
+    expect(grokBin).toBe("/Users/yeongyu/.grok/bin/grok")
+  })
+
+  it("Given configured binary and common local binary exists When resolving path Then configured path wins", () => {
+    // When
+    const grokBin = resolveGrokBinaryPath({
+      configuredBin: "/opt/grok/bin/grok",
+      commonLocalBinExists: true,
+    })
+
+    // Then
+    expect(grokBin).toBe("/opt/grok/bin/grok")
+  })
+
+  it("Given no configured binary and no common local binary When resolving path Then shell path is used", () => {
+    // When
+    const grokBin = resolveGrokBinaryPath({
+      configuredBin: undefined,
+      commonLocalBinExists: false,
+    })
+
+    // Then
+    expect(grokBin).toBe("grok")
   })
 })
