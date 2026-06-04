@@ -39,9 +39,9 @@ describe("admin routes", () => {
         "x-admin-token": "dev-admin-token",
       },
       body: JSON.stringify({
-        email: "qa@example.com",
-        accessToken: "SENSITIVE_ACCESS_SENTINEL",
-        refreshToken: "SENSITIVE_REFRESH_SENTINEL",
+        email: " qa@example.com ",
+        accessToken: " SENSITIVE_ACCESS_SENTINEL ",
+        refreshToken: " SENSITIVE_REFRESH_SENTINEL ",
         expiresAt: 1_780_001_000_000,
         modelIds: ["grok-composer-2.5-fast"],
       }),
@@ -60,6 +60,8 @@ describe("admin routes", () => {
     expect(logText).not.toContain("SENSITIVE_ACCESS_SENTINEL")
     expect(logText).not.toContain("SENSITIVE_REFRESH_SENTINEL")
     expect(store.accounts).toHaveLength(1)
+    expect(store.accounts[0]?.email).toBe("qa@example.com")
+    expect(store.accounts[0]?.accessToken).toBe("SENSITIVE_ACCESS_SENTINEL")
     expect(store.accounts[0]?.refreshToken).toBe("SENSITIVE_REFRESH_SENTINEL")
   })
 

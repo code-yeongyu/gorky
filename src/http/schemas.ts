@@ -28,9 +28,9 @@ export const CreateKeyRequestSchema = z.object({
 })
 
 export const RegisterAccountRequestSchema = z.object({
-  email: z.email(),
-  accessToken: z.string().min(1),
-  refreshToken: z.string().min(1),
+  email: NonEmptyTrimmedStringSchema.pipe(z.email()),
+  accessToken: NonEmptyTrimmedStringSchema,
+  refreshToken: NonEmptyTrimmedStringSchema,
   expiresAt: z.number().int().positive(),
   modelIds: ModelIdSetSchema,
 })
