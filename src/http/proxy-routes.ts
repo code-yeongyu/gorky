@@ -57,6 +57,7 @@ export function registerProxyRoutes(
             "content-type": "application/json",
             "x-grok-client-version": config.grokClientVersion,
             "x-grok-model-override": parsed.data.model,
+            "user-agent": `grok/${config.grokClientVersion}`,
           },
           body: JSON.stringify(parsed.data),
         }),
@@ -142,6 +143,7 @@ export function registerProxyRoutes(
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "content-type": "application/json",
+            "user-agent": `grok/${config.grokClientVersion}`,
           },
           body: JSON.stringify(parsed.data),
         }),

@@ -6,3 +6,4 @@ apps/web/dist/
 .DS_Store
 .omo/
 .qa/
+gorky.sqlite*
