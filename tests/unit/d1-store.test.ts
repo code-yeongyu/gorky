@@ -17,6 +17,7 @@ describe("D1 store", () => {
       modelIds: ["grok-composer-2.5-fast"],
       status: "active",
       lastUsedAt: null,
+      priority: 100,
     }
 
     // When
@@ -43,6 +44,7 @@ describe("D1 store", () => {
       modelIds: ["grok-build"],
       status: "active",
       lastUsedAt: null,
+      priority: 100,
     }
 
     // When
@@ -71,6 +73,7 @@ describe("D1 store", () => {
       modelIds: ["grok-build"],
       status: "active",
       lastUsedAt: null,
+      priority: 100,
     }
     const secondAccount: AccountTokenRecord = {
       id: "acct_2",
@@ -81,6 +84,7 @@ describe("D1 store", () => {
       modelIds: ["grok-composer-2.5-fast"],
       status: "refresh_failed",
       lastUsedAt: 1_780_000_050_000,
+      priority: 100,
     }
 
     // When
@@ -108,6 +112,7 @@ describe("D1 store", () => {
         modelIds: ["grok-build"],
         status: "active",
         lastUsedAt: null,
+        priority: 100,
       },
       {
         id: "acct_2",
@@ -118,6 +123,7 @@ describe("D1 store", () => {
         modelIds: ["grok-composer-2.5-fast"],
         status: "active",
         lastUsedAt: null,
+        priority: 100,
       },
     ]
 
@@ -130,6 +136,35 @@ describe("D1 store", () => {
     expect(db.accounts.get("acct_1")?.access_token_ciphertext).not.toBe("SENSITIVE_FIRST_ACCESS")
     expect(db.accounts.get("acct_2")?.refresh_token_ciphertext).not.toBe("SENSITIVE_SECOND_REFRESH")
     expect(listed).toEqual(accounts)
+  })
+
+  it("Given routing settings When saving mode and priority Then D1 routing state round-trips", async () => {
+    // Given
+    const db = new FakeD1Database()
+    const store = createD1Store(db, "0123456789abcdef0123456789abcdef")
+    const account: AccountTokenRecord = {
+      id: "acct_1",
+      email: "qa@example.com",
+      accessToken: "SENSITIVE_ACCESS_SENTINEL",
+      refreshToken: "SENSITIVE_REFRESH_SENTINEL",
+      expiresAt: 1_780_000_000_000,
+      modelIds: ["grok-build"],
+      status: "active",
+      lastUsedAt: null,
+      priority: 100,
+    }
+
+    // When
+    const defaultRouting = await store.getRoutingConfig()
+    await store.saveAccount(account)
+    await store.saveRoutingConfig({ mode: "priority" })
+    const routing = await store.getRoutingConfig()
+    const updated = await store.updateAccountPriority(account.id, 5)
+
+    // Then
+    expect(defaultRouting).toEqual({ mode: "round_robin" })
+    expect(routing).toEqual({ mode: "priority" })
+    expect(updated?.priority).toBe(5)
   })
 
   it("Given an api key record When saving and listing Then JSON model restrictions round-trip", async () => {

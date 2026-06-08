@@ -165,11 +165,85 @@ nav a[aria-current="page"] {
   justify-content: flex-end;
 }
 
+.priority-input {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin: 0;
+}
+
+.priority-input input {
+  inline-size: 84px;
+}
+
+.routing-panel {
+  margin-bottom: 24px;
+}
+
+.segmented-control {
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  display: inline-flex;
+  overflow: hidden;
+}
+
+.segmented-control button {
+  border: 0;
+  border-radius: 0;
+}
+
+.segmented-control button[aria-pressed="true"] {
+  background: var(--accent-primary);
+  color: var(--surface-primary);
+}
+
 .empty-state {
   border: 1px dashed var(--border-default);
   border-radius: 6px;
   color: var(--text-tertiary);
   padding: 16px;
+}
+
+.register-shell {
+  min-height: 100dvh;
+  padding: 32px;
+}
+
+.register-content {
+  margin: 0 auto;
+  max-width: 1040px;
+}
+
+.register-header {
+  margin-bottom: 32px;
+}
+
+.register-grid {
+  align-items: start;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.register-panel {
+  margin-top: 0;
+}
+
+.register-output {
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+}
+
+.register-output span {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.register-output code {
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 860px) {
@@ -205,5 +279,13 @@ nav a[aria-current="page"] {
 
   .dashboard-grid .panel:first-child {
     grid-row: auto;
+  }
+
+  .register-shell {
+    padding: 20px;
+  }
+
+  .register-grid {
+    grid-template-columns: 1fr;
   }
 }

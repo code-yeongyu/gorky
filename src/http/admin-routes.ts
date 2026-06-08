@@ -11,6 +11,7 @@ import {
 import { registerAdminBulkAccountRoutes } from "./admin-bulk-account-routes"
 import { registerAdminKeyRoutes } from "./admin-key-routes"
 import { logAdminEvent, redactAccount } from "./admin-presenters"
+import { registerAdminRoutingRoutes } from "./admin-routing-routes"
 import { readJson, requireAdmin, toOpenAiError } from "./auth"
 import { validateConfiguredModels } from "./model-validation"
 import { RegisterAccountRequestSchema } from "./schemas"
@@ -18,6 +19,7 @@ import { RegisterAccountRequestSchema } from "./schemas"
 export function registerAdminRoutes(app: Hono, deps: AppDependencies): void {
   registerAdminBulkAccountRoutes(app, deps)
   registerAdminKeyRoutes(app, deps)
+  registerAdminRoutingRoutes(app, deps)
 
   app.post("/api/admin/accounts", async (c) => {
     const auth = requireAdmin(c.req.raw.headers, deps.adminToken)

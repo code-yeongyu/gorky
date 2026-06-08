@@ -19,6 +19,7 @@ export function createRegisteredAccount(input: RegisterAccountInput): AccountTok
     modelIds: input.modelIds,
     status: "active",
     lastUsedAt: null,
+    priority: 100,
   }
 }
 

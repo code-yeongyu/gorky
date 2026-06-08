@@ -1,4 +1,9 @@
 export type AccountStatus = "active" | "refresh_failed" | "disabled"
+export type RoutingMode = "round_robin" | "priority"
+
+export type RoutingConfig = {
+  readonly mode: RoutingMode
+}
 
 export type AccountTokenRecord = {
   readonly id: string
@@ -9,6 +14,7 @@ export type AccountTokenRecord = {
   readonly modelIds: readonly string[]
   readonly status: AccountStatus
   readonly lastUsedAt: number | null
+  readonly priority?: number | undefined
 }
 
 export type ApiKeyRecord = {

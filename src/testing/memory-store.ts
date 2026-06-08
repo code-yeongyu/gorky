@@ -1,4 +1,4 @@
-import type { AccountTokenRecord, ApiKeyRecord } from "../domain/types"
+import type { AccountTokenRecord, ApiKeyRecord, RoutingConfig } from "../domain/types"
 import type { GorkyStore } from "../store"
 
 type MemoryStoreInput = {
@@ -12,8 +12,9 @@ export type MemoryStore = GorkyStore & {
 }
 
 export function createMemoryStore(input: MemoryStoreInput): MemoryStore {
-  const accounts = [...input.accounts]
+  const accounts = input.accounts.map(withDefaultPriority)
   const apiKeys = [...input.apiKeys]
+  let routing: RoutingConfig = { mode: "round_robin" }
 
   return {
     accounts,
@@ -23,18 +24,33 @@ export function createMemoryStore(input: MemoryStoreInput): MemoryStore {
       return accounts.find((account) => account.id === accountId) ?? null
     },
     saveAccount: async (account) => {
-      accounts.push(account)
+      accounts.push(withDefaultPriority(account))
     },
     saveAccounts: async (nextAccounts) => {
-      accounts.push(...nextAccounts)
+      accounts.push(...nextAccounts.map(withDefaultPriority))
     },
     saveRefreshedAccount: async (account) => {
       const index = accounts.findIndex((candidate) => candidate.id === account.id)
+      const nextAccount = withDefaultPriority(account)
       if (index >= 0) {
-        accounts.splice(index, 1, account)
+        accounts.splice(index, 1, nextAccount)
         return
       }
-      accounts.push(account)
+      accounts.push(nextAccount)
+    },
+    getRoutingConfig: async () => routing,
+    saveRoutingConfig: async (config) => {
+      routing = config
+    },
+    updateAccountPriority: async (accountId, priority) => {
+      const index = accounts.findIndex((candidate) => candidate.id === accountId)
+      const account = accounts[index]
+      if (!account) {
+        return null
+      }
+      const prioritized = { ...account, priority }
+      accounts.splice(index, 1, prioritized)
+      return prioritized
     },
     disableAccount: async (accountId) => {
       const index = accounts.findIndex((candidate) => candidate.id === accountId)
@@ -90,4 +106,8 @@ export function createMemoryStore(input: MemoryStoreInput): MemoryStore {
       apiKeys.splice(index, 1, { ...apiKey, lastUsedAt: usedAt })
     },
   }
+}
+
+function withDefaultPriority(account: AccountTokenRecord): AccountTokenRecord {
+  return { ...account, priority: account.priority ?? 100 }
 }

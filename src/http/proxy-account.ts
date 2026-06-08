@@ -14,7 +14,11 @@ type PrepareAccountFailure = {
 }
 
 type AccountPoolResult =
-  | { readonly kind: "success"; readonly accounts: readonly AccountTokenRecord[] }
+  | {
+      readonly kind: "success"
+      readonly accounts: readonly AccountTokenRecord[]
+      readonly routing: Awaited<ReturnType<AppDependencies["store"]["getRoutingConfig"]>>
+    }
   | { readonly kind: "failure"; readonly error: PrepareAccountFailure["error"] }
 
 export async function prepareAccount(
@@ -47,7 +51,7 @@ export async function prepareAccount(
     } as const
   }
 
-  const selected = selectAccountForModel(accountPool.accounts, model)
+  const selected = selectAccountForModel(accountPool.accounts, model, accountPool.routing)
   if (!selected) {
     return {
       kind: "failure",
@@ -83,7 +87,11 @@ export async function prepareAccount(
 
 async function listAccountPool(deps: AppDependencies): Promise<AccountPoolResult> {
   try {
-    return { kind: "success", accounts: await deps.store.listAccounts() }
+    const [accounts, routing] = await Promise.all([
+      deps.store.listAccounts(),
+      deps.store.getRoutingConfig(),
+    ])
+    return { kind: "success", accounts, routing }
   } catch (error) {
     if (error instanceof Error) {
       return {

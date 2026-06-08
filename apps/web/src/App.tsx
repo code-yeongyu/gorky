@@ -9,9 +9,14 @@ import {
   fetchAccounts,
   fetchKeys,
   fetchModels,
+  fetchRouting,
+  type RoutingConfig,
+  type RoutingMode,
   refreshAccount,
   requestJson,
   revokeKey,
+  updateAccountPriority,
+  updateRouting,
 } from "./api"
 import {
   AdminTokenForm,
@@ -21,19 +26,30 @@ import {
   KeyList,
 } from "./components"
 import { type FormSubmitEvent, messageFromError, stringField } from "./form-utils"
+import { RegisterAccountPage } from "./register-account-page"
 import { RegistrationPanel } from "./registration-panel"
+import { RoutingPanel } from "./routing-panel"
 
 type Notice = { readonly kind: "success" | "error" | "info"; readonly message: string }
 
 const ADMIN_TOKEN_STORAGE_KEY = "gorky.adminToken"
 
 export function App(): React.ReactElement {
+  if (globalThis.location.pathname.startsWith("/register-account")) {
+    return <RegisterAccountPage />
+  }
+
+  return <DashboardApp />
+}
+
+function DashboardApp(): React.ReactElement {
   const [adminToken, setAdminToken] = useState(
     () => sessionStorage.getItem(ADMIN_TOKEN_STORAGE_KEY) ?? "",
   )
   const [models, setModels] = useState<readonly string[]>([])
   const [accounts, setAccounts] = useState<readonly AccountRow[]>([])
   const [apiKeys, setApiKeys] = useState<readonly ApiKeyRow[]>([])
+  const [routing, setRouting] = useState<RoutingConfig>({ mode: "round_robin" })
   const [notice, setNotice] = useState<Notice>({
     kind: "info",
     message: "Connect with an admin token.",
@@ -58,9 +74,14 @@ export function App(): React.ReactElement {
     if (!token) return
     setIsLoading(true)
     try {
-      const [nextAccounts, nextKeys] = await Promise.all([fetchAccounts(token), fetchKeys(token)])
+      const [nextAccounts, nextKeys, nextRouting] = await Promise.all([
+        fetchAccounts(token),
+        fetchKeys(token),
+        fetchRouting(token),
+      ])
       setAccounts(nextAccounts)
       setApiKeys(nextKeys)
+      setRouting(nextRouting)
       setNotice({ kind: "success", message: "Dashboard is synced." })
     } catch (error) {
       setNotice({ kind: "error", message: messageFromError(error) })
@@ -123,6 +144,18 @@ export function App(): React.ReactElement {
     await runAccountAction(() => refreshAccount(adminToken, accountId), "Account refreshed.")
   }
 
+  async function setRoutingMode(mode: RoutingMode): Promise<void> {
+    await runAccountAction(() => updateRouting(adminToken, mode), "Routing updated.")
+  }
+
+  async function setAccountPriority(accountId: string, priority: number): Promise<void> {
+    if (!Number.isInteger(priority) || priority < 0) return
+    await runAccountAction(
+      () => updateAccountPriority(adminToken, accountId, priority),
+      "Account priority updated.",
+    )
+  }
+
   async function revokeApiKey(keyId: string): Promise<void> {
     try {
       setIsLoading(true)
@@ -172,6 +205,12 @@ export function App(): React.ReactElement {
           activeKeys={activeKeys}
         />
 
+        <RoutingPanel
+          routing={routing}
+          isBusy={isLoading || !adminToken}
+          onModeChange={setRoutingMode}
+        />
+
         <section className="dashboard-grid">
           <section className="panel" id="accounts" aria-label="Registered accounts">
             <div className="panel-title">
@@ -189,6 +228,7 @@ export function App(): React.ReactElement {
               isBusy={isLoading}
               onDisable={(accountId) => setRegisteredAccountStatus(accountId, "disabled")}
               onEnable={(accountId) => setRegisteredAccountStatus(accountId, "active")}
+              onPriorityChange={setAccountPriority}
               onRefresh={refreshRegisteredAccount}
             />
           </section>

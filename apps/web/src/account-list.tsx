@@ -6,6 +6,7 @@ export function AccountList(props: {
   readonly isBusy: boolean
   readonly onDisable: (accountId: string) => void
   readonly onEnable: (accountId: string) => void
+  readonly onPriorityChange: (accountId: string, priority: number) => void
   readonly onRefresh: (accountId: string) => void
 }): React.ReactElement {
   if (!props.accounts.length) {
@@ -35,6 +36,7 @@ export function AccountList(props: {
               isBusy={props.isBusy}
               onDisable={props.onDisable}
               onEnable={props.onEnable}
+              onPriorityChange={props.onPriorityChange}
               onRefresh={props.onRefresh}
             />
           </div>
@@ -49,6 +51,7 @@ function AccountActions(props: {
   readonly isBusy: boolean
   readonly onDisable: (accountId: string) => void
   readonly onEnable: (accountId: string) => void
+  readonly onPriorityChange: (accountId: string, priority: number) => void
   readonly onRefresh: (accountId: string) => void
 }): React.ReactElement {
   if (props.account.status === "disabled") {
@@ -65,6 +68,19 @@ function AccountActions(props: {
 
   return (
     <div className="action-pair">
+      <label className="priority-input">
+        Priority
+        <input
+          type="number"
+          min="0"
+          max="1000000"
+          defaultValue={props.account.priority}
+          disabled={props.isBusy}
+          onBlur={(event) =>
+            props.onPriorityChange(props.account.id, Number(event.currentTarget.value))
+          }
+        />
+      </label>
       <button
         type="button"
         disabled={props.isBusy}

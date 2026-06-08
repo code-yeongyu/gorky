@@ -8,6 +8,13 @@ export type AccountRow = {
   readonly expiresAt: number
   readonly modelIds: readonly string[]
   readonly lastUsedAt: number | null
+  readonly priority: number
+}
+
+export type RoutingMode = "round_robin" | "priority"
+
+export type RoutingConfig = {
+  readonly mode: RoutingMode
 }
 
 export type CreateKeyResponse = {
@@ -35,6 +42,14 @@ export type ApiKeyRow = {
   readonly deactivatedAt: number | null
 }
 
+export type RegisterOAuthStartResponse = {
+  readonly authorizationUrl: string
+  readonly state: string
+  readonly redirectUri: string
+}
+
+export type RegisterOAuthCallbackResponse = AccountRow
+
 export async function fetchModels(): Promise<readonly string[]> {
   const body = await requestJson<{ readonly models: readonly string[] }>("/api/models", {
     method: "GET",
@@ -51,6 +66,23 @@ export async function fetchAccounts(adminToken: string): Promise<readonly Accoun
     },
   )
   return body.accounts
+}
+
+export async function fetchRouting(adminToken: string): Promise<RoutingConfig> {
+  const body = await requestJson<{ readonly routing: RoutingConfig }>("/api/admin/routing", {
+    method: "GET",
+    adminToken,
+  })
+  return body.routing
+}
+
+export async function updateRouting(adminToken: string, mode: RoutingMode): Promise<RoutingConfig> {
+  const body = await requestJson<{ readonly routing: RoutingConfig }>("/api/admin/routing", {
+    method: "PATCH",
+    adminToken,
+    body: { mode },
+  })
+  return body.routing
 }
 
 export async function disableAccount(adminToken: string, accountId: string): Promise<AccountRow> {
@@ -81,6 +113,22 @@ export async function refreshAccount(adminToken: string, accountId: string): Pro
     {
       method: "POST",
       adminToken,
+    },
+  )
+  return body.account
+}
+
+export async function updateAccountPriority(
+  adminToken: string,
+  accountId: string,
+  priority: number,
+): Promise<AccountRow> {
+  const body = await requestJson<{ readonly account: AccountRow }>(
+    `/api/admin/accounts/${encodeURIComponent(accountId)}/priority`,
+    {
+      method: "PATCH",
+      adminToken,
+      body: { priority },
     },
   )
   return body.account
@@ -118,6 +166,24 @@ export async function revokeKey(adminToken: string, keyId: string): Promise<ApiK
     },
   )
   return body.key
+}
+
+export async function startRegisterOAuth(input: {
+  readonly modelIds: readonly string[]
+}): Promise<RegisterOAuthStartResponse> {
+  return requestJson<RegisterOAuthStartResponse>("/api/register-account/oauth/start", {
+    method: "POST",
+    body: input,
+  })
+}
+
+export async function submitRegisterOAuthCallback(input: {
+  readonly callbackUrl: string
+}): Promise<RegisterOAuthCallbackResponse> {
+  return requestJson<RegisterOAuthCallbackResponse>("/api/register-account/oauth/callback", {
+    method: "POST",
+    body: input,
+  })
 }
 
 export async function requestJson<T = unknown>(

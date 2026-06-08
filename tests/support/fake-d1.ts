@@ -8,6 +8,12 @@ type AccountRow = {
   model_ids: unknown
   status: unknown
   last_used_at: unknown
+  priority: unknown
+}
+
+type RoutingConfigRow = {
+  key: unknown
+  value: unknown
 }
 
 type ApiKeyRow = {
@@ -25,6 +31,7 @@ type ApiKeyRow = {
 export class FakeD1Database {
   readonly accounts = new Map<string, AccountRow>()
   readonly apiKeys = new Map<string, ApiKeyRow>()
+  readonly routingConfig = new Map<string, RoutingConfigRow>()
   batchCallCount = 0
 
   prepare(sql: string): FakeD1Statement {
@@ -35,6 +42,7 @@ export class FakeD1Database {
     this.batchCallCount += 1
     const accountSnapshot = cloneAccountRows(this.accounts)
     const apiKeySnapshot = cloneApiKeyRows(this.apiKeys)
+    const routingSnapshot = cloneRoutingRows(this.routingConfig)
     try {
       const results: unknown[] = []
       for (const statement of statements) {
@@ -50,6 +58,10 @@ export class FakeD1Database {
       for (const [key, value] of apiKeySnapshot) {
         this.apiKeys.set(key, value)
       }
+      this.routingConfig.clear()
+      for (const [key, value] of routingSnapshot) {
+        this.routingConfig.set(key, value)
+      }
       throw error
     }
   }
@@ -60,6 +72,12 @@ function cloneAccountRows(input: ReadonlyMap<string, AccountRow>): Map<string, A
 }
 
 function cloneApiKeyRows(input: ReadonlyMap<string, ApiKeyRow>): Map<string, ApiKeyRow> {
+  return new Map([...input.entries()].map(([key, value]) => [key, { ...value }]))
+}
+
+function cloneRoutingRows(
+  input: ReadonlyMap<string, RoutingConfigRow>,
+): Map<string, RoutingConfigRow> {
   return new Map([...input.entries()].map(([key, value]) => [key, { ...value }]))
 }
 
@@ -88,6 +106,7 @@ class FakeD1Statement {
         model_ids: this.bindings[6],
         status: this.bindings[7],
         last_used_at: this.bindings[8],
+        priority: this.bindings[9],
       })
     }
 
@@ -113,6 +132,20 @@ class FakeD1Statement {
       if (account) {
         account.status = this.bindings[0]
       }
+    }
+
+    if (this.sql.includes("UPDATE accounts") && this.sql.includes("priority")) {
+      const account = this.db.accounts.get(String(this.bindings[1]))
+      if (account) {
+        account.priority = this.bindings[0]
+      }
+    }
+
+    if (this.sql.includes("INSERT OR REPLACE INTO routing_config")) {
+      this.db.routingConfig.set(String(this.bindings[0]), {
+        key: this.bindings[0],
+        value: this.bindings[1],
+      })
     }
 
     if (this.sql.includes("INSERT INTO api_keys")) {
@@ -155,7 +188,10 @@ class FakeD1Statement {
     return { success: true, meta: {}, results: [...this.db.accounts.values()] }
   }
 
-  async first(): Promise<AccountRow | ApiKeyRow | null> {
+  async first(): Promise<AccountRow | ApiKeyRow | RoutingConfigRow | null> {
+    if (this.sql.includes("FROM routing_config")) {
+      return this.db.routingConfig.get(String(this.bindings[0])) ?? null
+    }
     if (this.sql.includes("FROM accounts") && this.sql.includes("WHERE id")) {
       return this.db.accounts.get(String(this.bindings[0])) ?? null
     }

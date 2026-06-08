@@ -12,6 +12,7 @@ const AccountRowSchema = z.object({
   model_ids: z.string(),
   status: z.enum(["active", "refresh_failed", "disabled"]),
   last_used_at: z.number().nullable(),
+  priority: z.number().nullable().default(100),
 })
 
 const ApiKeyRowSchema = z.object({
@@ -84,6 +85,32 @@ export function createD1Store<TStatement extends D1StoreStatement<TStatement>>(
           account.id,
         )
         .run()
+    },
+    getRoutingConfig: async () => {
+      const row = await db
+        .prepare("SELECT value FROM routing_config WHERE key = ?")
+        .bind("mode")
+        .first()
+      const parsed = z.object({ value: z.enum(["round_robin", "priority"]) }).safeParse(row)
+      if (!parsed.success) return { mode: "round_robin" }
+      return { mode: parsed.data.value }
+    },
+    saveRoutingConfig: async (config) => {
+      await db
+        .prepare("INSERT OR REPLACE INTO routing_config (key, value) VALUES (?, ?)")
+        .bind("mode", config.mode)
+        .run()
+    },
+    updateAccountPriority: async (accountId, priority) => {
+      await db
+        .prepare("UPDATE accounts SET priority = ? WHERE id = ?")
+        .bind(priority, accountId)
+        .run()
+      const row = await db.prepare("SELECT * FROM accounts WHERE id = ?").bind(accountId).first()
+      if (!row) {
+        return null
+      }
+      return accountFromRow(AccountRowSchema.parse(row), tokenSecret)
     },
     disableAccount: async (accountId) => {
       await db
@@ -180,8 +207,8 @@ async function createInsertAccountStatement<TStatement extends D1StoreStatement<
     .prepare(
       `INSERT INTO accounts (
         id, email, principal_type, access_token_ciphertext, refresh_token_ciphertext,
-        expires_at, model_ids, status, last_used_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        expires_at, model_ids, status, last_used_at, priority
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       account.id,
@@ -193,6 +220,7 @@ async function createInsertAccountStatement<TStatement extends D1StoreStatement<
       JSON.stringify(account.modelIds),
       account.status,
       account.lastUsedAt,
+      account.priority ?? 100,
     )
 }
 
@@ -209,6 +237,7 @@ async function accountFromRow(
     modelIds: ModelIdsSchema.parse(JSON.parse(row.model_ids)),
     status: row.status,
     lastUsedAt: row.last_used_at,
+    priority: row.priority ?? 100,
   }
 }
 

@@ -11,6 +11,7 @@ export function redactAccount(account: AccountTokenRecord) {
     modelIds: account.modelIds,
     status: account.status,
     lastUsedAt: account.lastUsedAt,
+    priority: account.priority ?? 100,
   }
 }
 

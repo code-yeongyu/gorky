@@ -49,3 +49,21 @@ export const OAuthStartRequestSchema = z.object({
   ),
   modelIds: ModelIdSetSchema.optional(),
 })
+
+export const RegisterOAuthStartRequestSchema = z.object({
+  modelIds: ModelIdSetSchema.optional(),
+})
+
+export const RegisterOAuthCallbackRequestSchema = z.object({
+  callbackUrl: z.url(),
+})
+
+export const RoutingModeSchema = z.enum(["round_robin", "priority"])
+
+export const UpdateRoutingRequestSchema = z.object({
+  mode: RoutingModeSchema,
+})
+
+export const UpdateAccountPriorityRequestSchema = z.object({
+  priority: z.number().int().min(0).max(1_000_000),
+})

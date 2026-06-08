@@ -1,4 +1,4 @@
-import type { AccountTokenRecord, ApiKeyRecord } from "./domain/types"
+import type { AccountTokenRecord, ApiKeyRecord, RoutingConfig } from "./domain/types"
 
 export type GorkyStore = {
   readonly listAccounts: () => Promise<readonly AccountTokenRecord[]>
@@ -6,6 +6,12 @@ export type GorkyStore = {
   readonly saveAccount: (account: AccountTokenRecord) => Promise<void>
   readonly saveAccounts: (accounts: readonly AccountTokenRecord[]) => Promise<void>
   readonly saveRefreshedAccount: (account: AccountTokenRecord) => Promise<void>
+  readonly getRoutingConfig: () => Promise<RoutingConfig>
+  readonly saveRoutingConfig: (config: RoutingConfig) => Promise<void>
+  readonly updateAccountPriority: (
+    accountId: string,
+    priority: number,
+  ) => Promise<AccountTokenRecord | null>
   readonly disableAccount: (accountId: string) => Promise<AccountTokenRecord | null>
   readonly enableAccount: (accountId: string) => Promise<AccountTokenRecord | null>
   readonly saveApiKey: (record: ApiKeyRecord) => Promise<void>

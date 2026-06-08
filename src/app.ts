@@ -6,6 +6,7 @@ import { extractApiKey, getRequestId } from "./http/auth"
 import { createRedactingLogger, type LoggerEvent } from "./http/logging"
 import { registerOAuthRoutes } from "./http/oauth-routes"
 import { registerProxyRoutes } from "./http/proxy-routes"
+import { registerAccountRoutes } from "./http/register-account-routes"
 import { registerSecurityHeaders } from "./http/security-headers"
 import { redactSensitiveData } from "./lib/redaction"
 import type { GorkyStore } from "./store"
@@ -84,6 +85,7 @@ export function createApp(deps: AppDependencies): Hono {
   }
 
   registerAdminRoutes(app, routeDeps)
+  registerAccountRoutes(app, routeDeps)
   registerOAuthRoutes(app, routeDeps)
   registerProxyRoutes(app, routeDeps, { cliProxyBaseUrl, grokClientVersion, publicApiBaseUrl })
 
