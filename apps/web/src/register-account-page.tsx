@@ -6,6 +6,7 @@ import {
   submitRegisterOAuthCallback,
 } from "./api"
 import { type FormSubmitEvent, messageFromError, stringField } from "./form-utils"
+import { openReservedLoginWindow, reserveLoginWindow } from "./register-login-window"
 
 type Notice = { readonly kind: "success" | "error" | "info"; readonly message: string }
 
@@ -32,15 +33,20 @@ export function RegisterAccountPage(): React.ReactElement {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     const modelIds = form.getAll("modelIds").map(String)
+    const loginWindow = reserveLoginWindow()
     setIsBusy(true)
     try {
       const response = await startRegisterOAuth({
         modelIds: modelIds.length ? modelIds : selectedModels,
       })
       setStart(response)
-      setNotice({ kind: "success", message: "Login link is ready." })
-      globalThis.location.assign(response.authorizationUrl)
+      const opened = openReservedLoginWindow(loginWindow, response.authorizationUrl)
+      setNotice({
+        kind: "success",
+        message: opened ? "Login opened in a new tab." : "Login link is ready.",
+      })
     } catch (error) {
+      loginWindow?.close()
       setNotice({ kind: "error", message: messageFromError(error) })
     } finally {
       setIsBusy(false)
@@ -95,7 +101,11 @@ export function RegisterAccountPage(): React.ReactElement {
               Open login
             </button>
             {start ? (
-              <output className="register-output" aria-label="OAuth redirect URI">
+              <output className="register-output" aria-label="OAuth login details">
+                <span>Login URL</span>
+                <a href={start.authorizationUrl} target="_blank" rel="noreferrer">
+                  Open login
+                </a>
                 <span>Redirect URI</span>
                 <code>{start.redirectUri}</code>
               </output>

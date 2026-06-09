@@ -3,6 +3,7 @@ import { parseManualAccountBatch } from "./bulk-account-import"
 import { ManualAccountForm, OAuthForm } from "./components"
 import { type FormSubmitEvent, messageFromError, stringField } from "./form-utils"
 import { buildOAuthStartBody } from "./oauth-start-form"
+import { openReservedLoginWindow, reserveLoginWindow } from "./register-login-window"
 
 type Notice = { readonly kind: "success" | "error" | "info"; readonly message: string }
 
@@ -20,6 +21,7 @@ export function RegistrationPanel(props: {
       props.onNotice({ kind: "error", message: startBody.message })
       return
     }
+    const loginWindow = reserveLoginWindow()
     try {
       const response = await requestJson<{ readonly authorizationUrl: string }>(
         "/api/admin/oauth/start",
@@ -29,8 +31,13 @@ export function RegistrationPanel(props: {
           body: startBody.body,
         },
       )
-      globalThis.location.assign(response.authorizationUrl)
+      const opened = openReservedLoginWindow(loginWindow, response.authorizationUrl)
+      props.onNotice({
+        kind: "success",
+        message: opened ? "Login opened in a new tab." : "Login link is ready.",
+      })
     } catch (error) {
+      loginWindow?.close()
       props.onNotice({ kind: "error", message: messageFromError(error) })
     }
   }
