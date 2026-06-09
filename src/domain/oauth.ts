@@ -21,6 +21,11 @@ export type OAuthStateStore = {
   readonly put: (state: string, record: OAuthStateRecord, ttlSeconds: number) => Promise<void>
   readonly get: (state: string) => Promise<OAuthStateRecord | null>
   readonly delete: (state: string) => Promise<void>
+  readonly resolveSingleActiveState?: () => Promise<
+    | { readonly kind: "found"; readonly state: string }
+    | { readonly kind: "not_found" }
+    | { readonly kind: "ambiguous" }
+  >
 }
 
 export type OAuthTokenExchangeResult =

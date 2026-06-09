@@ -179,6 +179,7 @@ export async function startRegisterOAuth(input: {
 
 export async function submitRegisterOAuthCallback(input: {
   readonly callbackUrl: string
+  readonly state?: string
 }): Promise<RegisterOAuthCallbackResponse> {
   return requestJson<RegisterOAuthCallbackResponse>("/api/register-account/oauth/callback", {
     method: "POST",

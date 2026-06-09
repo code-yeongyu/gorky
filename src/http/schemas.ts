@@ -55,7 +55,8 @@ export const RegisterOAuthStartRequestSchema = z.object({
 })
 
 export const RegisterOAuthCallbackRequestSchema = z.object({
-  callbackUrl: z.url(),
+  callbackUrl: NonEmptyTrimmedStringSchema,
+  state: NonEmptyTrimmedStringSchema.optional(),
 })
 
 export const RoutingModeSchema = z.enum(["round_robin", "priority"])

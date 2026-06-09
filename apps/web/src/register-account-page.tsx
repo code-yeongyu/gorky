@@ -56,11 +56,12 @@ export function RegisterAccountPage(): React.ReactElement {
   async function submitCallback(event: FormSubmitEvent): Promise<void> {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
+    const callbackUrl = stringField(form, "callbackUrl")
     setIsBusy(true)
     try {
-      const account = await submitRegisterOAuthCallback({
-        callbackUrl: stringField(form, "callbackUrl"),
-      })
+      const account = await submitRegisterOAuthCallback(
+        start ? { callbackUrl, state: start.state } : { callbackUrl },
+      )
       setNotice({ kind: "success", message: `${account.email} registered.` })
       event.currentTarget.reset()
     } catch (error) {
@@ -114,16 +115,16 @@ export function RegisterAccountPage(): React.ReactElement {
 
           <form className="panel form-stack register-panel" onSubmit={submitCallback}>
             <div className="panel-title">
-              <h2>Callback URL</h2>
-              <p>Submit the localhost redirect.</p>
+              <h2>Callback</h2>
+              <p>Submit the localhost redirect or fallback code.</p>
             </div>
             <label>
-              Localhost callback URL
+              Localhost callback URL or code
               <textarea
                 name="callbackUrl"
                 required
                 spellCheck={false}
-                placeholder="http://127.0.0.1:8787/callback?code=...&state=..."
+                placeholder="http://127.0.0.1:8787/callback?code=...&state=... or paste the code shown by X"
               />
             </label>
             <button type="submit" disabled={isBusy}>

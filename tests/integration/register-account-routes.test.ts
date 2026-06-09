@@ -24,6 +24,12 @@ function createMemoryOAuthStateStore(): OAuthStateStore & {
     delete: async (state) => {
       records.delete(state)
     },
+    resolveSingleActiveState: async () => {
+      if (records.size === 0) return { kind: "not_found" }
+      if (records.size > 1) return { kind: "ambiguous" }
+      const state = records.keys().next().value
+      return typeof state === "string" ? { kind: "found", state } : { kind: "not_found" }
+    },
   }
 }
 
@@ -117,6 +123,54 @@ describe("public account registration routes", () => {
     expect(text).not.toContain("SENSITIVE_ACCESS_SENTINEL")
     expect(text).not.toContain("SENSITIVE_REFRESH_SENTINEL")
     expect(store.accounts[0]?.email).toBe("register@example.com")
+    expect(await stateStore.get("state_1")).toBeNull()
+  })
+
+  it("Given a pasted fallback code When only one login is active Then account is stored", async () => {
+    // Given
+    const store = createMemoryStore({ accounts: [], apiKeys: [] })
+    const stateStore = createMemoryOAuthStateStore()
+    await stateStore.put(
+      "state_1",
+      {
+        codeVerifier: "verifier_12345678901234567890123456789012",
+        redirectUri: "http://127.0.0.1:8787/callback",
+        nonce: "nonce_12345678901234567890",
+        modelIds: ["grok-build"],
+        createdAt: 1_780_000_000_000,
+      },
+      600,
+    )
+    const app = createRegistrationApp({
+      store,
+      stateStore,
+      exchangeCode: async (input) => {
+        expect(input.code).toBe("raw_code_1")
+        expect(input.redirectUri).toBe("http://127.0.0.1:8787/callback")
+        return {
+          kind: "success",
+          accessToken: "SENSITIVE_ACCESS_SENTINEL",
+          refreshToken: "SENSITIVE_REFRESH_SENTINEL",
+          expiresInSeconds: 21_600,
+          email: "fallback@example.com",
+        }
+      },
+    })
+
+    // When
+    const response = await app.request("/api/register-account/oauth/callback", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        callbackUrl: "raw_code_1",
+      }),
+    })
+    const text = await response.text()
+
+    // Then
+    expect(response.status).toBe(201)
+    expect(text).toContain("fallback@example.com")
+    expect(store.accounts[0]?.email).toBe("fallback@example.com")
     expect(await stateStore.get("state_1")).toBeNull()
   })
 })

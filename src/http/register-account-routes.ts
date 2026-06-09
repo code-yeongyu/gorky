@@ -17,6 +17,10 @@ import { RegisterOAuthCallbackRequestSchema, RegisterOAuthStartRequestSchema } f
 const OAUTH_STATE_TTL_SECONDS = 600
 const REGISTER_REDIRECT_URI = "http://127.0.0.1:8787/callback"
 
+type ParsedRegisterCallback =
+  | { readonly kind: "success"; readonly code: string; readonly state: string }
+  | { readonly kind: "failure"; readonly code: string; readonly message: string }
+
 export function registerAccountRoutes(app: Hono, deps: AppDependencies): void {
   app.post("/api/register-account/oauth/start", async (c) => {
     const parsed = RegisterOAuthStartRequestSchema.safeParse(await readJson(c.req.raw))
@@ -84,7 +88,11 @@ export function registerAccountRoutes(app: Hono, deps: AppDependencies): void {
         400,
       )
     }
-    const callback = parseLoopbackCallbackUrl(parsed.data.callbackUrl)
+    const callback = await parseCallbackInput({
+      value: parsed.data.callbackUrl,
+      fallbackState: parsed.data.state,
+      deps,
+    })
     if (callback.kind === "failure") {
       return c.json(toOpenAiError("invalid_request_error", callback.code, callback.message), 400)
     }
@@ -118,16 +126,28 @@ export function registerAccountRoutes(app: Hono, deps: AppDependencies): void {
   })
 }
 
-function parseLoopbackCallbackUrl(
-  value: string,
-):
-  | { readonly kind: "success"; readonly code: string; readonly state: string }
-  | { readonly kind: "failure"; readonly code: string; readonly message: string } {
+async function parseCallbackInput(input: {
+  readonly value: string
+  readonly fallbackState: string | undefined
+  readonly deps: AppDependencies
+}): Promise<ParsedRegisterCallback> {
+  const value = input.value
+  if (!value.startsWith("http://") && !value.startsWith("https://")) {
+    const state = input.fallbackState ?? (await resolveSingleRawCodeState(input.deps))
+    if (!state) {
+      return {
+        kind: "failure",
+        code: "missing_oauth_state",
+        message: "Start login first, then paste the code from the fallback page.",
+      }
+    }
+    return { kind: "success", code: value, state }
+  }
   if (!isGrokCliLoopbackRedirectUri(value)) {
     return {
       kind: "failure",
       code: "unsupported_oauth_callback_url",
-      message: "Paste the localhost callback URL from the X login redirect.",
+      message: "Paste the localhost callback URL or fallback code from the X login redirect.",
     }
   }
   const url = new URL(value)
@@ -141,6 +161,12 @@ function parseLoopbackCallbackUrl(
     }
   }
   return { kind: "success", code, state }
+}
+
+async function resolveSingleRawCodeState(deps: AppDependencies): Promise<string | null> {
+  const resolved = await deps.oauthStateStore?.resolveSingleActiveState?.()
+  if (resolved?.kind !== "found") return null
+  return resolved.state
 }
 
 async function registerCallbackAccount(input: {
